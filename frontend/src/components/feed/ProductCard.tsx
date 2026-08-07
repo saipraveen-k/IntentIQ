@@ -108,11 +108,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
         </div>
 
-        {/* Section 3: "Why This Recommendation?" XAI Drawer Toggle */}
-        <div className="border-t border-white/5 pt-2">
+        {/* Section 3: "Why This Recommendation?" XAI Drawer Toggle & Signals */}
+        <div className="border-t border-white/5 pt-2 space-y-2">
+          {/* AI Confidence Progress Bar & Label */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-400 font-medium">AI Confidence</span>
+              <span className="text-emerald-400 font-mono font-bold">{matchPct}%</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+                style={{ width: `${matchPct}%` }}
+              />
+            </div>
+          </div>
+
           <button
             onClick={() => setShowXAI(!showXAI)}
-            className="w-full flex items-center justify-between text-xs font-semibold text-blue-400 hover:text-blue-300 py-1 transition-colors"
+            className="w-full flex items-center justify-between text-xs font-medium text-slate-300 hover:text-blue-400 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md outline-none"
+            aria-expanded={showXAI}
+            aria-label="Toggle recommendation explanation"
           >
             <span className="flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-blue-400" />
@@ -122,19 +138,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
 
           {showXAI && (
-            <div className="mt-2.5 p-3 rounded-xl bg-blue-950/40 border border-blue-500/20 text-xs text-slate-300 space-y-2 animate-fadeIn">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-2 animate-fadeIn">
               <p className="font-medium text-slate-200 leading-relaxed italic">
-                "{product.xai_explanation || `Matches active ${activeIntentLabel} shopping intent.`}"
+                "{product.xai_explanation || `Matches active ${activeIntentLabel} intent.`}"
               </p>
-              <div className="space-y-1 text-[11px] text-slate-400 pt-1 border-t border-blue-500/20">
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <CheckCircle2 className="w-3 h-3" /> Matches active intent ({activeIntentLabel})
-                </div>
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <CheckCircle2 className="w-3 h-3" /> Instacart basket co-occurrence validated
-                </div>
-                <div className="flex items-center gap-1.5 text-emerald-400">
-                  <CheckCircle2 className="w-3 h-3" /> Similar customer behavior profile
+              
+              {/* Signals Used Breakdown */}
+              <div className="pt-2 border-t border-slate-800">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                  Signals Used
+                </span>
+                <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-300 font-medium">
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <CheckCircle2 className="w-3 h-3" /> Search
+                  </span>
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <CheckCircle2 className="w-3 h-3" /> Basket
+                  </span>
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <CheckCircle2 className="w-3 h-3" /> Clickstream
+                  </span>
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <CheckCircle2 className="w-3 h-3" /> Session
+                  </span>
                 </div>
               </div>
             </div>

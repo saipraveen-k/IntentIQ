@@ -27,6 +27,10 @@ class RedisManager:
         self.use_fallback = False
         self.fallback = InMemoryRedisFallback()
 
+    @property
+    def is_fallback(self) -> bool:
+        return self.use_fallback
+
     async def connect(self):
         try:
             import redis.asyncio as aioredis

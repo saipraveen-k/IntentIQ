@@ -55,10 +55,15 @@ class SemanticSearchAgent:
 
         results = []
         cache_items = []
+        seen_ids = set()
+
         for prod in products:
+            if prod.id in seen_ids:
+                continue
             if budget_max and prod.price > budget_max:
                 continue
             
+            seen_ids.add(prod.id)
             similarity = scores_map.get(prod.id, 0.75)
             results.append({
                 "product": prod,

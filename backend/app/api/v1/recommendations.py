@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Set
 from app.core.database import get_db
 from app.models.schemas import FeedResponse, ProductDTO
 from app.repositories.product_repository import ProductRepository
@@ -26,8 +26,14 @@ async def get_personalized_feed(
     )
 
     product_dtos: List[ProductDTO] = []
+    seen_ids: Set[str] = set()
+
     for item in recommendations:
         p = item["product"]
+        if p.id in seen_ids:
+            continue
+        seen_ids.add(p.id)
+
         score = item["score"]
         
         # Generate XAI explanation

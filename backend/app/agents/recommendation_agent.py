@@ -56,14 +56,18 @@ class RecommendationAgent:
 
         scored_products.sort(key=lambda x: x[1], reverse=True)
 
-        # Step 5: Category Diversity Reranking
+        # Step 5: Category Diversity Reranking & Strict Product Deduplication
         final_products = []
+        seen_ids: Set[str] = set()
         category_counts: Dict[str, int] = {}
 
         for prod, score in scored_products:
+            if prod.id in seen_ids:
+                continue
             cat_count = category_counts.get(prod.category, 0)
             if cat_count < 3 or len(final_products) < limit / 2:
                 category_counts[prod.category] = cat_count + 1
+                seen_ids.add(prod.id)
                 final_products.append({
                     "product": prod,
                     "score": round(float(score), 3)
@@ -73,7 +77,8 @@ class RecommendationAgent:
 
         if len(final_products) < limit:
             for prod, score in scored_products:
-                if not any(p["product"].id == prod.id for p in final_products):
+                if prod.id not in seen_ids:
+                    seen_ids.add(prod.id)
                     final_products.append({
                         "product": prod,
                         "score": round(float(score), 3)

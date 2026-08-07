@@ -66,6 +66,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
@@ -74,6 +77,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception during request processing to {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "ERROR",
+            "message": "Internal server error occurred.",
+            "detail": str(exc) if settings.DEBUG else "An unexpected error occurred. Please try again.",
+            "path": str(request.url.path)
+        }
+    )
 
 # Register All API Routers
 app.include_router(brain_router, prefix=settings.API_V1_STR, tags=["AI Brain Orchestrator"])
