@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { AIBrainPanel } from '../components/brain/AIBrainPanel';
 import { PersonalizedFeed } from '../components/feed/PersonalizedFeed';
 import { ProductCard } from '../components/feed/ProductCard';
+import { PersonaSelector } from '../components/feed/PersonaSelector';
 import { Search, Sparkles, Zap, ShieldCheck, Database, ArrowRight, Layers, TrendingUp, Package, Activity, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { api, Product, SystemHealthResponse } from '../lib/api';
+import { api, Product } from '../lib/api';
 
 export default function HomePage() {
-  const { toggleSearchModal, sessionId, activeIntentLabel, intentConfidence } = useStore();
+  const { toggleSearchModal, sessionId, activeIntentLabel } = useStore();
   const [fbtProducts, setFbtProducts] = useState<Product[]>([]);
-  const [healthData, setHealthData] = useState<SystemHealthResponse | null>(null);
   const [loadingFbt, setLoadingFbt] = useState(true);
 
   const trendingCategories = [
@@ -22,47 +22,41 @@ export default function HomePage() {
     { name: 'Frozen Goods', icon: '❄️', count: '145 Products', intent: 'Cold Chain' },
   ];
 
-  useEffect(() => {
-    const loadHomeData = async () => {
-      setLoadingFbt(true);
-      try {
-        const [feedRes, healthRes] = await Promise.all([
-          api.getFeed(sessionId, 6),
-          api.getSystemHealth()
-        ]);
-        if (feedRes.products) {
-          // Deduplicate feed products
-          const uniqueProds = Array.from(new Map(feedRes.products.map(p => [p.id, p])).values());
-          setFbtProducts(uniqueProds.slice(0, 4));
-        }
-        setHealthData(healthRes);
-      } catch (e) {
-        console.warn('Home data load notice:', e);
-      } finally {
-        setLoadingFbt(false);
+  const loadHomeData = async () => {
+    setLoadingFbt(true);
+    try {
+      const feedRes = await api.getFeed(sessionId, 8);
+      if (feedRes.products) {
+        const uniqueProds = Array.from(new Map(feedRes.products.map(p => [p.id, p])).values());
+        setFbtProducts(uniqueProds.slice(0, 4));
       }
-    };
+    } catch (e) {
+      console.warn('Home data load notice:', e);
+    } finally {
+      setLoadingFbt(false);
+    }
+  };
+
+  useEffect(() => {
     loadHomeData();
   }, [sessionId]);
 
-  const perf = healthData?.performance_metrics || {};
-
   return (
-    <div className="space-y-16 py-4 max-w-7xl mx-auto">
+    <div className="space-y-12 py-4 max-w-7xl mx-auto">
       
-      {/* 1. HERO SECTION */}
+      {/* 1. LUXURY STOREFRONT HERO SECTION */}
       <section className="relative overflow-hidden rounded-3xl glass-panel p-8 sm:p-12 border border-slate-800 text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400">
           <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-          <span>IntentIQ • Shopper Intent, Not Just History</span>
+          <span>Curated Grocery Intelligence • Instacart Powered</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
-          Personalized Multi-Intent Discovery Engine
+          Find Products You'll Actually Love
         </h1>
 
         <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-normal">
-          Powered by real-time clickstream telemetry, Instacart order basket co-occurrence graphs, FAISS HNSW vector similarity search, and Gemini 1.5 Flash explainability.
+          Personalized in real-time across 134 Instacart aisles using multi-signal shopper intent vectors, basket co-occurrence graphs, and FAISS 384d semantic search.
         </p>
 
         {/* Quick Search Launcher Button */}
@@ -72,38 +66,23 @@ export default function HomePage() {
             className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Search className="w-4 h-4" />
-            <span>Launch Semantic AI Vector Search</span>
+            <span>Launch Semantic Product Discovery</span>
             <kbd className="px-2 py-0.5 text-[11px] bg-slate-900/80 rounded text-slate-300 font-mono">⌘K</kbd>
           </button>
         </div>
-
-        {/* System Badges */}
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium border-t border-slate-800/80 max-w-3xl mx-auto">
-          <span className="flex items-center gap-1.5 text-slate-300">
-            <Zap className="w-3.5 h-3.5 text-emerald-400" /> Sub-1000ms SLA Passed
-          </span>
-          <span className="text-slate-700">•</span>
-          <span className="flex items-center gap-1.5 text-slate-300">
-            <Database className="w-3.5 h-3.5 text-blue-400" /> Instacart Primary Dataset
-          </span>
-          <span className="text-slate-700">•</span>
-          <span className="flex items-center gap-1.5 text-slate-300">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> DPDP Act 2023 Compliant
-          </span>
-        </div>
       </section>
 
-      {/* 2. AI SHOPPING BRAIN CONTROL PANEL & INTENT TIMELINE */}
-      <section className="space-y-4">
-        <AIBrainPanel />
+      {/* 2. INTERACTIVE DEMO PERSONA SWITCHER */}
+      <section className="glass-panel p-6 rounded-3xl border border-slate-800">
+        <PersonaSelector onPersonaChange={loadHomeData} />
       </section>
 
-      {/* 3. AI GENERATED FEED */}
+      {/* 3. CURATED PERSONALIZED COLLECTION FEED */}
       <section className="space-y-4">
         <PersonalizedFeed />
       </section>
 
-      {/* 4. SEMANTIC SEARCH PROMPT LAUNCHER SECTION */}
+      {/* 4. SEMANTIC PRODUCT DISCOVERY PROMPT LAUNCHER */}
       <section className="glass-panel p-8 rounded-3xl border border-slate-800 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -111,9 +90,9 @@ export default function HomePage() {
               <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
                 <Search className="w-4 h-4" />
               </span>
-              <h2 className="text-xl font-bold text-white tracking-tight">Semantic AI Vector Search</h2>
+              <h2 className="text-xl font-bold text-white tracking-tight">Semantic Product Discovery</h2>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Dense 384-dimensional embedding vector lookup powered by sentence-transformers & FAISS HNSW.</p>
+            <p className="text-xs text-slate-400 mt-1">Dense 384-dimensional vector retrieval across natural language search intents.</p>
           </div>
 
           <button
@@ -143,7 +122,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. TRENDING CATEGORIES */}
+      {/* 5. TRENDING INSTACART DEPARTMENTS */}
       <section className="space-y-6">
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-2">
@@ -201,37 +180,9 @@ export default function HomePage() {
         ) : null}
       </section>
 
-      {/* 7. LIVE INSIGHTS & SLA METRICS SUMMARY */}
-      <section className="glass-panel p-6 rounded-3xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 font-bold text-white text-sm">
-            <Activity className="w-4 h-4 text-emerald-400" /> Average AI Brain Latency
-          </div>
-          <div className="text-2xl font-extrabold text-white">
-            {perf.avg_ai_brain_latency_ms || 11.27} ms
-          </div>
-          <p className="text-slate-400">Measured across 7 agent pipeline stages in serial/parallel execution.</p>
-        </div>
-
-        <div className="space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
-          <div className="flex items-center gap-2 font-bold text-white text-sm">
-            <Database className="w-4 h-4 text-blue-400" /> Instacart Basket Coverage
-          </div>
-          <div className="text-2xl font-extrabold text-white">
-            100% Precomputed
-          </div>
-          <p className="text-slate-400">Order co-occurrence graph edges mapped across 134 Instacart aisles.</p>
-        </div>
-
-        <div className="space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
-          <div className="flex items-center gap-2 font-bold text-white text-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Hardware Acceleration
-          </div>
-          <div className="text-2xl font-extrabold text-white">
-            FAISS HNSW Vector Index
-          </div>
-          <p className="text-slate-400">Singleton in-memory vector index with sub-millisecond candidate recall.</p>
-        </div>
+      {/* 7. COLLAPSED SHOPPING INTELLIGENCE DRAWER FOR JUDGES */}
+      <section className="space-y-4">
+        <AIBrainPanel />
       </section>
 
     </div>

@@ -138,31 +138,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
 
           {showXAI && (
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-2 animate-fadeIn">
+            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-2.5 animate-fadeIn">
               <p className="font-medium text-slate-200 leading-relaxed italic">
-                "{product.xai_explanation || `Matches active ${activeIntentLabel} intent.`}"
+                "{product.structured_xai?.primary_reason || product.xai_explanation || `Matches active ${activeIntentLabel} intent.`}"
               </p>
               
-              {/* Signals Used Breakdown */}
-              <div className="pt-2 border-t border-slate-800">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-                  Signals Used
-                </span>
-                <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-300 font-medium">
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <CheckCircle2 className="w-3 h-3" /> Search
+              {/* Supporting Signals List */}
+              {product.structured_xai?.supporting_signals && (
+                <div className="pt-2 border-t border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Evidence Signals
                   </span>
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <CheckCircle2 className="w-3 h-3" /> Basket
-                  </span>
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <CheckCircle2 className="w-3 h-3" /> Clickstream
-                  </span>
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <CheckCircle2 className="w-3 h-3" /> Session
-                  </span>
+                  <ul className="space-y-0.5 text-[11px] text-slate-300">
+                    {product.structured_xai.supporting_signals.map((sig, idx) => (
+                      <li key={idx} className="flex items-center gap-1.5 text-emerald-400">
+                        <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        <span className="text-slate-300">{sig}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
+
+              {/* Sub-Score Breakdown */}
+              {product.score_breakdown && (
+                <div className="pt-2 border-t border-slate-800 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Decision Sub-Scores
+                  </span>
+                  <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-slate-300">
+                    <div>Sim: <span className="text-blue-400">{Math.round(product.score_breakdown.semantic * 100)}%</span></div>
+                    <div>Graph: <span className="text-emerald-400">{Math.round(product.score_breakdown.graph * 100)}%</span></div>
+                    <div>Intent: <span className="text-indigo-400">{Math.round(product.score_breakdown.intent * 100)}%</span></div>
+                    <div>Budget: <span className="text-amber-400">{Math.round(product.score_breakdown.budget * 100)}%</span></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

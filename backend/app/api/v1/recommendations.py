@@ -35,13 +35,17 @@ async def get_personalized_feed(
         seen_ids.add(p.id)
 
         score = item["score"]
+        breakdown = item.get("score_breakdown")
+        decision_trace = item.get("decision_trace")
         
-        # Generate XAI explanation
-        xai_text = await explainability_agent.explain(
+        # Generate Structured XAI explanation
+        struct_xai = await explainability_agent.explain_structured(
             user_intent=active_label,
             product_title=p.title,
             category=p.category,
-            brand=p.brand
+            brand=p.brand,
+            score_breakdown=breakdown,
+            decision_trace=decision_trace
         )
 
         dto = ProductDTO(
@@ -57,8 +61,10 @@ async def get_personalized_feed(
             image_url=p.image_url,
             attributes=p.attributes,
             in_stock=p.in_stock,
-            xai_explanation=xai_text,
-            match_score=score
+            xai_explanation=f"{struct_xai.primary_reason} ({struct_xai.confidence}% confidence)",
+            structured_xai=struct_xai,
+            match_score=score,
+            score_breakdown=breakdown
         )
         product_dtos.append(dto)
 
