@@ -5,7 +5,6 @@
 ### *Real-Time Multi-Intent Product Discovery & Personalization Engine*
 
 [![AI Build 2026](https://img.shields.io/badge/AI--Build--2026-Hackathon--Submission-6366f1?style=for-the-badge&logo=google&logoColor=white)](https://github.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-06b6d4?style=for-the-badge&logo=open-source-initiative&logoColor=white)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.0-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
