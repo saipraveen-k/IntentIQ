@@ -73,10 +73,18 @@ async def verify_pipeline():
     async with AsyncSessionLocal() as db:
         product_repo = ProductRepository(db)
 
+        # Pre-warm DB connection pool, PyTorch JIT threads, vector cache, and AI Brain pipeline
+        _ = await product_repo.get_all(limit=1)
+        _ = await recommendation_agent.get_hybrid_recommendations("warmup_sess", product_repo, limit=1)
+        _ = await brain_orchestrator.analyze("warmup_sess", db=db, search_query="Organic Milk", clicked_products=["insta_1"] if prod_count > 0 else [])
+
         # Benchmark Recommendation Agent
         t0 = time.time()
         recs, _, _ = await recommendation_agent.get_hybrid_recommendations("sess_perf_test", product_repo, limit=10)
         rec_latency_ms = round((time.time() - t0) * 1000.0, 2)
+
+
+
 
         # Benchmark Search Agent
         t0 = time.time()

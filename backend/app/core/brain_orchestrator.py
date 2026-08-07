@@ -1,4 +1,5 @@
 import time
+import asyncio
 import logging
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -176,8 +177,7 @@ class AIBrainOrchestrator:
         # Step 6: Explainability Agent Execution (XAI Rationales)
         # ---------------------------------------------------------------------
         t0 = time.time()
-        explanations: List[Dict[str, Any]] = []
-        for item in recs_raw[:5]: # Generate explanations for Top 5 items
+        async def _gen_explanation(item: Dict[str, Any]) -> Dict[str, Any]:
             p = item["product"]
             exp_text = await explainability_agent.explain(
                 user_intent=active_label,
@@ -185,12 +185,16 @@ class AIBrainOrchestrator:
                 category=p.category,
                 brand=p.brand
             )
-            explanations.append({
+            return {
                 "product_id": p.id,
                 "product_title": p.title,
                 "explanation": exp_text,
                 "match_score": item["score"]
-            })
+            }
+
+        explanations: List[Dict[str, Any]] = list(
+            await asyncio.gather(*[_gen_explanation(item) for item in recs_raw[:5]])
+        ) if recs_raw else []
 
         t_xai = round((time.time() - t0) * 1000.0, 2)
         latency_breakdown["ExplainabilityAgent"] = t_xai

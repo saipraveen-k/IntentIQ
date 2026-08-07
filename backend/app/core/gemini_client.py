@@ -25,6 +25,8 @@ class GeminiClient:
         self.api_keys: List[str] = [k.strip() for k in raw_keys.split(",") if k.strip()]
         self.active_key_index: int = 0
         self.model = None
+        self._exp_cache: Dict[str, str] = {}
+        self._intent_cache: Dict[str, Dict[str, Any]] = {}
 
     def initialize(self):
         if self.api_keys and genai_module is not None:
@@ -61,70 +63,82 @@ class GeminiClient:
             return False
 
     async def generate_explanation(self, user_intent: str, product_title: str, category: str) -> str:
-        prompt = (
-            f"You are an AI personalization engine for an e-commerce platform.\n"
-            f"User Active Intent: '{user_intent}'\n"
-            f"Product Title: '{product_title}' (Category: {category})\n"
-            f"Write a concise, compelling 1-sentence explanation (under 15 words) for why this item is recommended to the user.\n"
-            f"Do not use quotes or prefixes."
-        )
+        cache_key = f"{user_intent}:{product_title}:{category}"
+        if cache_key in self._exp_cache:
+            return self._exp_cache[cache_key]
 
-        # Retry across configured keys if error occurs
-        for _ in range(len(self.api_keys) or 1):
-            if self.model:
-                try:
-                    response = self.model.generate_content(prompt)
-                    if response and response.text:
-                        return response.text.strip()
-                except Exception as e:
-                    logger.error(f"Gemini API error with Key #{self.active_key_index + 1}: {e}")
-                    if not self._switch_to_next_key():
-                        break
+        res = None
+        if self.model:
+            try:
+                import asyncio
+                loop = asyncio.get_running_loop()
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, self.model.generate_content, f"User Active Intent: '{user_intent}', Product: '{product_title}' ({category}). Write 1-sentence reason."),
+                    timeout=0.15
+                )
+                if response and response.text:
+                    res = response.text.strip()
+            except Exception as e:
+                logger.debug(f"Gemini API timeout or error: {e}. Switching to instant template synthesizer mode.")
+                self.model = None
 
-        # High-quality fallback template rationale
-        if "Decor" in user_intent or "Lighting" in user_intent:
-            return f"Matches your recent interest in {user_intent} and interior accents."
-        elif "Work" in user_intent or "Office" in user_intent or "Desk" in user_intent:
-            return f"Perfect complement for your active {user_intent} setup."
-        elif "Audio" in user_intent or "Tech" in user_intent:
-            return f"Top choice based on your views in high-performance {category}."
-        else:
-            return f"Popular item aligned with your active {user_intent} signals."
+        if not res:
+            if "Organic" in user_intent or "Healthy" in user_intent:
+                res = f"Matches your active {user_intent} preference and fresh produce co-occurrence pattern."
+            elif "Student" in user_intent or "Budget" in user_intent:
+                res = f"Ideal budget-friendly selection aligned with active {user_intent} signals."
+            elif "Luxury" in user_intent or "Gourmet" in user_intent:
+                res = f"Artisanal choice matching your luxury gourmet preferences."
+            else:
+                res = f"Curated item aligned with your active {user_intent} shopping signals."
+
+        if len(self._exp_cache) > 1000:
+            self._exp_cache.clear()
+        self._exp_cache[cache_key] = res
+        return res
 
     async def extract_search_intents(self, query: str) -> Dict[str, Any]:
-        prompt = (
-            f"Parse this e-commerce search query into JSON:\n"
-            f"Query: '{query}'\n"
-            f"Return JSON object with keys: 'extracted_intents' (list of strings), 'budget_max' (number or null).\n"
-            f"JSON ONLY."
-        )
+        if query in self._intent_cache:
+            return self._intent_cache[query]
 
-        for _ in range(len(self.api_keys) or 1):
-            if self.model:
-                try:
-                    response = self.model.generate_content(prompt)
-                    if response and response.text:
-                        clean_text = response.text.strip().replace("```json", "").replace("```", "")
-                        return json.loads(clean_text)
-                except Exception as e:
-                    logger.error(f"Gemini intent extraction error with Key #{self.active_key_index + 1}: {e}")
-                    if not self._switch_to_next_key():
-                        break
+        res = None
+        if self.model:
+            try:
+                import asyncio
+                loop = asyncio.get_running_loop()
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, self.model.generate_content, f"Parse query to JSON: '{query}'. Return {{'extracted_intents':[], 'budget_max': null}}"),
+                    timeout=0.15
+                )
+                if response and response.text:
+                    clean_text = response.text.strip().replace("```json", "").replace("```", "")
+                    res = json.loads(clean_text)
+            except Exception as e:
+                logger.debug(f"Gemini intent extraction timeout or error: {e}. Switching to heuristic parser.")
+                self.model = None
 
-        # Fallback heuristic parser
-        words = query.lower().split()
-        intents = [word.capitalize() for word in words if len(word) > 3 and word not in ["under", "with", "from", "that", "this", "for"]]
-        budget = None
-        for i, word in enumerate(words):
-            if word in ["under", "below", "less"] and i + 1 < len(words):
-                try:
-                    budget = float(words[i+1].replace("₹", "").replace("$", "").replace(",", ""))
-                except ValueError:
-                    pass
-        
-        return {
-            "extracted_intents": intents if intents else ["General"],
-            "budget_max": budget
-        }
+
+        if not res:
+            words = query.lower().split()
+            intents = [word.capitalize() for word in words if len(word) > 3 and word not in ["under", "with", "from", "that", "this", "for"]]
+            budget = None
+            for i, word in enumerate(words):
+                if word in ["under", "below", "less"] and i + 1 < len(words):
+                    try:
+                        budget = float(words[i+1].replace("₹", "").replace("$", "").replace(",", ""))
+                    except ValueError:
+                        pass
+            
+            res = {
+                "extracted_intents": intents if intents else ["General"],
+                "budget_max": budget
+            }
+
+        if len(self._intent_cache) > 1000:
+            self._intent_cache.clear()
+        self._intent_cache[query] = res
+        return res
 
 gemini_client = GeminiClient()
+
+

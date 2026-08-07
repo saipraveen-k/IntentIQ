@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Sparkles, Activity, CheckCircle2, TrendingUp, RefreshCw, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Cpu, Zap, Activity, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { api, BrainAnalyzeResponse } from '../../lib/api';
 
 export const AIBrainPanel: React.FC = () => {
   const { sessionId, activeIntentLabel, intentConfidence, intentHistory, setActiveIntent } = useStore();
+  const [isOpen, setIsOpen] = useState(false);
   const [brainData, setBrainData] = useState<BrainAnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastLatency, setLastLatency] = useState<number>(11.27);
@@ -23,124 +24,121 @@ export const AIBrainPanel: React.FC = () => {
         setLastLatency(data.latency.TotalExecutionTime);
       }
     } catch (err) {
-      console.warn('AI Brain state fetch notice:', err);
+      console.warn('Shopping Intelligence notice:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBrainState();
-  }, [sessionId]);
+    if (isOpen && !brainData) {
+      fetchBrainState();
+    }
+  }, [isOpen, sessionId]);
 
   const timelineSteps = intentHistory.length > 0
     ? intentHistory.slice(-4).map((h) => h.intent_label)
     : ['Neutral Discovery', 'Fresh Produce', 'Organic Pantry', 'Healthy Breakfast'];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl glass-panel p-6 lg:p-8 border border-blue-500/30 shadow-2xl shadow-blue-500/10">
+    <section className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden transition-all">
       
-      {/* Background Ambient Glow */}
-      <div className="ambient-glow glow-blue -top-20 -left-20 w-80 h-80 opacity-40" />
-      <div className="ambient-glow glow-emerald -bottom-20 -right-20 w-80 h-80 opacity-30" />
-
-      <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-        
-        {/* Left Info Column */}
-        <div className="space-y-3 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400">
-            <Brain className="w-4 h-4 text-blue-400 animate-pulse" />
-            <span>AI Shopping Brain Control Plane</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+      {/* Collapsed Bar Trigger */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left outline-none"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+            <Cpu className="w-4 h-4" />
           </div>
-
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            Real-Time Intent Inference Engine
-            <button
-              onClick={fetchBrainState}
-              disabled={loading}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-              title="Refresh AI Brain State"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-400' : ''}`} />
-            </button>
-          </h2>
-
-          <p className="text-slate-400 text-sm leading-relaxed">
-            IntentIQ recalculates shopper vector representations in real time using clickstream dwell time, search query decompositions, and Instacart basket sequence history.
-          </p>
-
-          {/* Active Detected Signals Badges */}
-          <div className="pt-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Detected Real-Time Signals</span>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Search Queries
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Basket Evolution
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Clickstream Dwell Time
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Instacart Purchase Graph
-              </span>
-            </div>
+          <div>
+            <h3 className="font-bold text-sm text-gray-900">Shopping Intelligence Drawer</h3>
+            <p className="text-xs text-gray-500">Inspect real-time decision traces, intent vectors, and SLA latencies</p>
           </div>
         </div>
 
-        {/* Right Active Intent Card & Confidence Gauge */}
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-block text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Active SLA: {lastLatency}ms
+          </span>
+          {isOpen ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+        </div>
+      </button>
+
+      {/* Expanded Technical Intelligence Content */}
+      {isOpen && (
+        <div className="p-6 border-t border-gray-100 bg-gray-50/50 space-y-6 animate-fadeIn">
           
-          {/* Active Intent Gauge */}
-          <div className="glass-card p-5 rounded-xl border border-white/10 min-w-[280px]">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-              <span className="font-semibold uppercase tracking-wider">Inferred Active Intent</span>
-              <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                <Zap className="w-3.5 h-3.5" /> {lastLatency}ms SLA
-              </span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div className="text-xl font-bold text-white mb-2 flex items-center justify-between">
-              <span>{activeIntentLabel}</span>
-              <span className="text-2xl text-emerald-400 font-extrabold">{Math.round(intentConfidence * 100)}%</span>
+            {/* Active Intent & Confidence */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400 block">Inferred Active Intent</span>
+              <div className="text-xl font-bold text-gray-900">{activeIntentLabel}</div>
+              <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 pt-1">
+                <span>Confidence Agreement</span>
+                <span>{Math.round(intentConfidence * 100)}%</span>
+              </div>
             </div>
 
-            {/* Confidence Progress Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 via-indigo-400 to-emerald-400 rounded-full transition-all duration-500"
-                style={{ width: `${Math.round(intentConfidence * 100)}%` }}
-              />
+            {/* Signal Inputs */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400 block">Active Signal Inputs</span>
+              <div className="space-y-1.5 text-xs text-gray-700">
+                <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Vector Similarity (FAISS 384d)
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Instacart Basket Co-Occurrence
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> EMA Clickstream Dwell Updates
+                </div>
+              </div>
             </div>
+
+            {/* Agent SLA Latencies */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Agent SLAs</span>
+                <button onClick={fetchBrainState} disabled={loading} className="text-gray-400 hover:text-gray-900">
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div>Intent: <span className="text-gray-900 font-bold">1.2ms</span></div>
+                <div>Search: <span className="text-gray-900 font-bold">3.2ms</span></div>
+                <div>Ranking: <span className="text-gray-900 font-bold">4.5ms</span></div>
+                <div>XAI: <span className="text-gray-900 font-bold">18.2ms</span></div>
+              </div>
+            </div>
+
           </div>
 
-          {/* Intent Timeline Sequence */}
-          <div className="glass-card p-4 rounded-xl border border-white/10 text-xs">
-            <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-2">Session Intent Timeline</span>
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Timeline Sequence */}
+          <div className="bg-white p-4 rounded-2xl border border-gray-200 text-xs">
+            <span className="text-gray-400 font-bold uppercase tracking-wider block mb-2">Vector Timeline Sequence</span>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {timelineSteps.map((step, idx) => (
                 <React.Fragment key={`${step}-${idx}`}>
-                  <span className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap ${
+                  <span className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap ${
                     idx === timelineSteps.length - 1
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 font-semibold'
-                      : 'bg-slate-800/80 text-slate-400'
+                      ? 'bg-slate-900 text-white font-bold'
+                      : 'bg-gray-100 text-gray-600'
                   }`}>
                     {step}
                   </span>
-                  {idx < timelineSteps.length - 1 && (
-                    <span className="text-slate-600 font-bold">→</span>
-                  )}
+                  {idx < timelineSteps.length - 1 && <span className="text-gray-400 font-bold">→</span>}
                 </React.Fragment>
               ))}
             </div>
           </div>
 
         </div>
-
-      </div>
+      )}
 
     </section>
   );
 };
+

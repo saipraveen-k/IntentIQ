@@ -6,13 +6,13 @@ import { useStore } from '../../store/useStore';
 import { api } from '../../lib/api';
 
 export const PERSONAS = [
-  { id: 'healthy', name: 'Healthy Lifestyle', icon: Heart, desc: 'Organic produce, cold pressed detox juice & clean eats', color: 'emerald' },
-  { id: 'student', name: 'College Student', icon: GraduationCap, desc: 'Quick microwave meals, energy drinks & budget snacks', color: 'blue' },
-  { id: 'luxury', name: 'Luxury Gourmet', icon: Crown, desc: 'Imported artisanal cheeses, truffle oil & fine foods', color: 'amber' },
-  { id: 'family', name: 'Family Shopping', icon: Users, desc: 'Bulk pantry staples, organic dairy & breakfast goods', color: 'indigo' },
-  { id: 'fitness', name: 'Fitness Enthusiast', icon: Dumbbell, desc: 'High protein whey, egg whites & clean recovery snacks', color: 'purple' },
-  { id: 'budget', name: 'Budget Essential', icon: Wallet, desc: 'Maximum discount value, store brands & pantry deals', color: 'cyan' },
-  { id: 'weekend', name: 'Weekend Cooking', icon: Utensils, desc: 'Baking ingredients, gourmet marinades & spices', color: 'rose' },
+  { id: 'healthy', name: 'Healthy Lifestyle', icon: Heart, badgeClass: 'bg-[#DFF7E2] text-[#065F46] border-[#BBF7D0]' },
+  { id: 'student', name: 'College Student', icon: GraduationCap, badgeClass: 'bg-[#D7ECFF] text-[#1E40AF] border-[#BFDBFE]' },
+  { id: 'luxury', name: 'Luxury Gourmet', icon: Crown, badgeClass: 'bg-[#DCCEF9] text-[#4C1D95] border-[#DDD6FE]' },
+  { id: 'family', name: 'Family Shopping', icon: Users, badgeClass: 'bg-[#FFE7D6] text-[#9A3412] border-[#FFEDD5]' },
+  { id: 'fitness', name: 'Fitness High-Protein', icon: Dumbbell, badgeClass: 'bg-[#F8D8E8] text-[#831843] border-[#FBCFE8]' },
+  { id: 'budget', name: 'Budget Deals', icon: Wallet, badgeClass: 'bg-[#FFF3C4] text-[#854D0E] border-[#FEF08A]' },
+  { id: 'weekend', name: 'Weekend Cooking', icon: Utensils, badgeClass: 'bg-[#FFE4E6] text-[#9F1239] border-[#FECDD3]' },
 ];
 
 export function PersonaSelector({ onPersonaChange }: { onPersonaChange?: () => void }) {
@@ -38,18 +38,18 @@ export function PersonaSelector({ onPersonaChange }: { onPersonaChange?: () => v
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-            Interactive Persona Demonstrator
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Shopping Persona Switcher
           </h3>
         </div>
-        <span className="text-[11px] text-slate-400">Select persona to test instant AI adaptation</span>
+        <span className="text-xs text-gray-400">Instant AI intent adaptation</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+      <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
         {PERSONAS.map((p) => {
           const Icon = p.icon;
           const isSelected = (activePersona || 'healthy') === p.id;
@@ -60,27 +60,15 @@ export function PersonaSelector({ onPersonaChange }: { onPersonaChange?: () => v
               key={p.id}
               onClick={() => handleSelectPersona(p.id)}
               disabled={isLoading}
-              className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between h-24 ${
+              className={`px-4 py-2.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-2 shrink-0 ${
                 isSelected
-                  ? 'bg-slate-800/90 border-blue-500/50 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/30'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                  ? `${p.badgeClass} shadow-sm ring-2 ring-gray-900/10 scale-[1.02]`
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
-                <span className={`p-1.5 rounded-lg ${isSelected ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-400'}`}>
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                {isSelected && (
-                  <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">
-                    <Check className="w-2.5 h-2.5" />
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <span className="text-xs font-bold text-white block truncate">{p.name}</span>
-                <span className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{p.desc}</span>
-              </div>
+              <Icon className="w-3.5 h-3.5" />
+              <span>{p.name}</span>
+              {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
             </button>
           );
         })}
@@ -88,3 +76,4 @@ export function PersonaSelector({ onPersonaChange }: { onPersonaChange?: () => v
     </div>
   );
 }
+

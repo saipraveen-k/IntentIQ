@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Activity, Cpu, Database, Zap, ShieldCheck, Layers, Server, RefreshCw, Sparkles, CheckCircle2, TrendingUp, BarChart3, Radio, ArrowUpRight, Award, PieChart, FlaskConical, ShoppingBag, Eye } from 'lucide-react';
+import { Cpu, Database, RefreshCw, Award, Eye, Server, FlaskConical, BarChart3, TrendingUp } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useStore } from '../../store/useStore';
 
@@ -60,32 +60,31 @@ export default function AIOperationsCenterPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto py-4">
+    <div className="space-y-8 max-w-7xl mx-auto py-6 px-4 sm:px-6">
       
-      {/* 1. DASHBOARD HEADER & TAB SWITCHER */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+      {/* HEADER & 7-TAB NAVIGATION */}
+      <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold border border-blue-500/20">
-              <Radio className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-              <span>Intelligence Operations Center</span>
-            </div>
-            <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Recommendation Quality & System Telemetry</h1>
-            <p className="text-xs text-slate-400">7-Tab operations dashboard monitoring offline metrics, online conversion, and pipeline SLAs.</p>
+            <span className="px-3 py-1 rounded-full bg-[#D7ECFF] text-[#1E40AF] text-xs font-bold">
+              Intelligence Operations Center
+            </span>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">System Telemetry & Quality</h1>
+            <p className="text-xs text-gray-500">7-Tab operations dashboard monitoring offline metrics, online conversion, and SLAs.</p>
           </div>
 
           <button
             onClick={fetchMetrics}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg shadow-blue-500/20 transition-all focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-sm transition-all"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Telemetry</span>
           </button>
         </div>
 
-        {/* 7-Tab Navigation Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto border-t border-slate-800 pt-4 scrollbar-none">
+        {/* 7 Navigation Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto border-t border-gray-100 pt-4 scrollbar-none">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             { id: 'quality', label: 'Recommendation Quality', icon: Award },
@@ -101,10 +100,10 @@ export default function AIOperationsCenterPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                className={`px-4 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
                   isSelected
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -117,31 +116,29 @@ export default function AIOperationsCenterPage() {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 font-medium">NDCG @ 10</span>
-              <div className="text-3xl font-extrabold text-emerald-400 font-mono">{(offline.ndcg_at_10 * 100).toFixed(1)}%</div>
-              <span className="text-[11px] text-slate-400 block">Offline ranking relevance accuracy</span>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">NDCG @ 10</span>
+            <div className="text-3xl font-extrabold text-gray-900 font-mono">{(offline.ndcg_at_10 * 100).toFixed(1)}%</div>
+            <span className="text-xs text-emerald-700 font-semibold block">Verified Offline Relevance</span>
+          </div>
 
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 font-medium">MAP Score</span>
-              <div className="text-3xl font-extrabold text-blue-400 font-mono">{(offline.map_score * 100).toFixed(1)}%</div>
-              <span className="text-[11px] text-slate-400 block">Mean Average Precision across test split</span>
-            </div>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">MAP Score</span>
+            <div className="text-3xl font-extrabold text-gray-900 font-mono">{(offline.map_score * 100).toFixed(1)}%</div>
+            <span className="text-xs text-blue-700 font-semibold block">Mean Average Precision</span>
+          </div>
 
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 font-medium">CTR (Click-Through Rate)</span>
-              <div className="text-3xl font-extrabold text-indigo-400 font-mono">{online.ctr_pct}%</div>
-              <span className="text-[11px] text-slate-400 block">Live recommendation click conversion</span>
-            </div>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">CTR (Click Rate)</span>
+            <div className="text-3xl font-extrabold text-gray-900 font-mono">{online.ctr_pct}%</div>
+            <span className="text-xs text-indigo-700 font-semibold block">Live Engagement</span>
+          </div>
 
-            <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-              <span className="text-xs text-slate-400 font-medium">Est. Revenue / Session</span>
-              <div className="text-3xl font-extrabold text-amber-400 font-mono">₹{online.est_avg_revenue_per_session.toFixed(2)}</div>
-              <span className="text-[11px] text-amber-400 font-semibold block">(Estimated Model Prediction)</span>
-            </div>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">Est. Revenue / Session</span>
+            <div className="text-3xl font-extrabold text-gray-900 font-mono">₹{online.est_avg_revenue_per_session.toFixed(2)}</div>
+            <span className="text-xs text-amber-700 font-semibold block">(Model Estimate)</span>
           </div>
         </div>
       )}
@@ -149,67 +146,67 @@ export default function AIOperationsCenterPage() {
       {/* TAB 2: RECOMMENDATION QUALITY */}
       {activeTab === 'quality' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <Award className="w-4 h-4 text-emerald-400" /> Offline Recommendation Metrics
+          <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <h3 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
+              <Award className="w-4 h-4 text-emerald-600" /> Offline Recommendation Quality Metrics
             </h3>
             <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Precision @ 5</span>
-                <span className="text-xl font-bold text-emerald-400">{(offline.precision_at_5 * 100).toFixed(1)}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Precision @ 5</span>
+                <span className="text-2xl font-bold text-gray-900">{(offline.precision_at_5 * 100).toFixed(1)}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Precision @ 10</span>
-                <span className="text-xl font-bold text-emerald-400">{(offline.precision_at_10 * 100).toFixed(1)}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Precision @ 10</span>
+                <span className="text-2xl font-bold text-gray-900">{(offline.precision_at_10 * 100).toFixed(1)}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Recall @ 10</span>
-                <span className="text-xl font-bold text-blue-400">{(offline.recall_at_10 * 100).toFixed(1)}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Recall @ 10</span>
+                <span className="text-2xl font-bold text-gray-900">{(offline.recall_at_10 * 100).toFixed(1)}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">MRR Score</span>
-                <span className="text-xl font-bold text-blue-400">{(offline.mrr_score * 100).toFixed(1)}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">MRR Score</span>
+                <span className="text-2xl font-bold text-gray-900">{(offline.mrr_score * 100).toFixed(1)}%</span>
               </div>
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-            <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-400" /> Online Engagement Metrics
+          <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <h3 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-600" /> Online Engagement Metrics
             </h3>
             <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Click-Through Rate (CTR)</span>
-                <span className="text-xl font-bold text-indigo-400">{online.ctr_pct}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Click-Through Rate</span>
+                <span className="text-2xl font-bold text-gray-900">{online.ctr_pct}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Cart Conversion Rate</span>
-                <span className="text-xl font-bold text-indigo-400">{online.cart_conversion_rate_pct}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Cart Conversion</span>
+                <span className="text-2xl font-bold text-gray-900">{online.cart_conversion_rate_pct}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Bundle Acceptance Rate</span>
-                <span className="text-xl font-bold text-amber-400">{online.bundle_acceptance_rate_pct}%</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Bundle Acceptance</span>
+                <span className="text-2xl font-bold text-gray-900">{online.bundle_acceptance_rate_pct}%</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-400 block font-sans">Est. Revenue / Session</span>
-                <span className="text-xl font-bold text-emerald-400">₹{online.est_avg_revenue_per_session}</span>
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+                <span className="text-gray-500 block font-sans font-semibold">Avg SLA Latency</span>
+                <span className="text-2xl font-bold text-gray-900">{online.avg_recommendation_latency_ms}ms</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 3: CUSTOMER BEHAVIOUR FUNNEL */}
+      {/* TAB 3: CUSTOMER BEHAVIOUR */}
       {activeTab === 'behaviour' && (
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Eye className="w-4 h-4 text-indigo-400" /> End-to-End Conversion Funnel
+        <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-6">
+          <h3 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
+            <Eye className="w-4 h-4 text-slate-700" /> Session Funnel Progression
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 text-xs text-center font-mono">
             {Object.entries(funnel).map(([stage, count]) => (
-              <div key={stage} className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-                <span className="text-slate-400 uppercase text-[10px] block font-sans">{stage.replace('_', ' ')}</span>
-                <span className="text-2xl font-extrabold text-white">{String(count)}</span>
+              <div key={stage} className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                <span className="text-gray-500 uppercase text-[10px] block font-sans font-bold">{stage.replace('_', ' ')}</span>
+                <span className="text-2xl font-extrabold text-gray-900">{String(count)}</span>
               </div>
             ))}
           </div>
@@ -218,24 +215,24 @@ export default function AIOperationsCenterPage() {
 
       {/* TAB 4: AI PIPELINE */}
       {activeTab === 'pipeline' && (
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-          <h3 className="font-bold text-base text-white">7 Agent Pipeline Latency SLAs</h3>
+        <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-extrabold text-lg text-gray-900">7 Agent Funnel Latency SLAs</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-              <span className="text-slate-400 block font-sans">Intent Agent</span>
-              <span className="text-lg font-bold text-emerald-400">1.2 ms</span>
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+              <span className="text-gray-500 block font-sans font-semibold">Intent Agent</span>
+              <span className="text-lg font-bold text-gray-900">1.2 ms</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-              <span className="text-slate-400 block font-sans">Search Agent</span>
-              <span className="text-lg font-bold text-blue-400">3.2 ms</span>
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+              <span className="text-gray-500 block font-sans font-semibold">Search Agent</span>
+              <span className="text-lg font-bold text-gray-900">3.2 ms</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-              <span className="text-slate-400 block font-sans">Ranking Agent</span>
-              <span className="text-lg font-bold text-indigo-400">4.5 ms</span>
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+              <span className="text-gray-500 block font-sans font-semibold">Ranking Agent</span>
+              <span className="text-lg font-bold text-gray-900">4.5 ms</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-              <span className="text-slate-400 block font-sans">Explainability Agent</span>
-              <span className="text-lg font-bold text-amber-400">18.2 ms</span>
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+              <span className="text-gray-500 block font-sans font-semibold">Explainability Agent</span>
+              <span className="text-lg font-bold text-gray-900">18.2 ms</span>
             </div>
           </div>
         </div>
@@ -244,46 +241,46 @@ export default function AIOperationsCenterPage() {
       {/* TAB 5: INFRASTRUCTURE */}
       {activeTab === 'infra' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-            <span className="text-xs text-slate-400">FAISS Vector Index</span>
-            <div className="text-xl font-bold text-white">384d HNSW Singleton</div>
-            <span className="text-[11px] text-emerald-400">100% In-Memory Sync</span>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">FAISS Vector Index</span>
+            <div className="text-xl font-extrabold text-gray-900">384d HNSW Singleton</div>
+            <span className="text-xs text-emerald-700 font-semibold block">100% In-Memory Sync</span>
           </div>
-          <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-            <span className="text-xs text-slate-400">PostgreSQL Store</span>
-            <div className="text-xl font-bold text-white">Asyncpg Engine</div>
-            <span className="text-[11px] text-blue-400">Sanitized Connection</span>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">PostgreSQL Store</span>
+            <div className="text-xl font-extrabold text-gray-900">Asyncpg Engine</div>
+            <span className="text-xs text-blue-700 font-semibold block">Sanitized Connection</span>
           </div>
-          <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
-            <span className="text-xs text-slate-400">Redis Intent Cache</span>
-            <div className="text-xl font-bold text-white">Session State Store</div>
-            <span className="text-[11px] text-indigo-400">EMA Vector Updates</span>
+          <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-2">
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">Redis Intent Cache</span>
+            <div className="text-xl font-extrabold text-gray-900">Session State Store</div>
+            <span className="text-xs text-indigo-700 font-semibold block">EMA Vector Updates</span>
           </div>
         </div>
       )}
 
       {/* TAB 6: DATASET */}
       {activeTab === 'dataset' && (
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-          <h3 className="font-bold text-base text-white">Instacart primary dataset co-occurrence graph</h3>
-          <p className="text-xs text-slate-400">Derived from Instacart 3M order records across 134 aisles and 21 departments.</p>
+        <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-extrabold text-lg text-gray-900">Instacart Dataset Baseline</h3>
+          <p className="text-sm text-gray-600">Derived from 3M Instacart orders across 134 aisles and 21 departments.</p>
         </div>
       )}
 
       {/* TAB 7: EXPERIMENTS */}
       {activeTab === 'experiments' && (
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-4">
-          <h3 className="font-bold text-base text-white">A/B Testing Ranking Strategy Comparison</h3>
+        <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+          <h3 className="font-extrabold text-lg text-gray-900">A/B Testing Ranking Experiments</h3>
           <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-              <span className="text-xs font-bold text-blue-400 block font-sans">Control A: Pure Semantic Search</span>
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+              <span className="text-xs font-bold text-gray-900 block font-sans">Control A: Pure Semantic Search</span>
               <div>Precision@5: 0.712</div>
               <div>NDCG@10: 0.745</div>
             </div>
-            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 border-emerald-500/40">
-              <span className="text-xs font-bold text-emerald-400 block font-sans">Treatment B: 8-Factor Multi-Objective</span>
-              <div>Precision@5: 0.842 (+18.2%)</div>
-              <div>NDCG@10: 0.856 (+14.8%)</div>
+            <div className="p-4 rounded-2xl bg-[#D7ECFF]/40 border border-[#BFDBFE] space-y-2">
+              <span className="text-xs font-bold text-[#1E40AF] block font-sans">Treatment B: 8-Factor Multi-Objective</span>
+              <div className="font-bold text-gray-900">Precision@5: 0.842 (+18.2%)</div>
+              <div className="font-bold text-gray-900">NDCG@10: 0.856 (+14.8%)</div>
             </div>
           </div>
         </div>
@@ -292,3 +289,4 @@ export default function AIOperationsCenterPage() {
     </div>
   );
 }
+
