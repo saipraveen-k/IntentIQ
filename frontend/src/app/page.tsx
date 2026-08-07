@@ -1,99 +1,68 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Sparkles, RefreshCw, Layers } from 'lucide-react';
-import { api, Product } from '@/lib/api';
-import { useAppStore } from '@/store/useStore';
-import { ProductCard } from '@/components/feed/ProductCard';
+import React from 'react';
+import { AIBrainPanel } from '../components/brain/AIBrainPanel';
+import { PersonalizedFeed } from '../components/feed/PersonalizedFeed';
+import { Search, Sparkles, Zap, ArrowRight, ShieldCheck, Database } from 'lucide-react';
+import { useStore } from '../store/useStore';
 
 export default function HomePage() {
-  const sessionId = useAppStore((state) => state.sessionId);
-  const activeIntentLabel = useAppStore((state) => state.activeIntentLabel);
-  const setActiveIntent = useAppStore((state) => state.setActiveIntent);
-  const consentGiven = useAppStore((state) => state.consentGiven);
-
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchFeed = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getPersonalizedFeed(sessionId);
-      setProducts(data.products);
-      setActiveIntent(data.active_intent, data.intent_confidence);
-    } catch (e) {
-      console.error("Failed to fetch feed", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFeed();
-  }, [sessionId, consentGiven]);
+  const { toggleSearchModal } = useStore();
 
   return (
-    <div className="space-y-6">
-      {/* Hero Banner / Active Intent Bar */}
-      <div className="glass-panel p-6 rounded-2xl relative overflow-hidden border border-indigo-500/30">
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-accent-cyan" />
-                Real-Time Multi-Intent Engine
-              </span>
-              {!consentGiven && (
-                <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold border border-rose-500/30">
-                  DPDP Consent Revoked
-                </span>
-              )}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Personalized Discovery Feed
-            </h1>
-            <p className="text-sm text-gray-400 mt-1 max-w-xl">
-              Click or dwell on products to watch the Intent Agent recalculate your 1024-dim intent vector in real time.
-            </p>
-          </div>
+    <div className="space-y-12">
+      
+      {/* Hero Banner Header */}
+      <section className="relative overflow-hidden rounded-3xl glass-panel p-8 lg:p-12 border border-blue-500/20 text-center space-y-6">
+        <div className="ambient-glow glow-blue top-0 left-1/2 -translate-x-1/2 w-96 h-96 opacity-30" />
 
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-pill text-xs font-semibold text-blue-400">
+          <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+          <span>Every Click Has Intent. Every Recommendation Has a Reason.</span>
+        </div>
+
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-tight">
+          Personalized Multi-Intent Discovery Engine
+        </h1>
+
+        <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+          Powered by real-time clickstream telemetry, Instacart order basket graphs, FAISS HNSW vector similarity search, and Gemini 1.5 Flash explainability.
+        </p>
+
+        {/* Quick Search Launcher Button */}
+        <div className="pt-2">
           <button
-            onClick={fetchFeed}
-            disabled={loading}
-            className="py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold flex items-center gap-2 border border-gray-700 transition-all shadow-md"
+            onClick={toggleSearchModal}
+            className="inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition-all hover:scale-105 active:scale-95"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh Feed
+            <Search className="w-4 h-4" />
+            <span>Launch Semantic AI Vector Search</span>
+            <kbd className="px-2 py-0.5 text-xs bg-slate-900/60 rounded text-blue-200 font-mono">⌘K</kbd>
           </button>
         </div>
-      </div>
 
-      {/* Active Intent Status Bar */}
-      <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-gray-900/60 border border-gray-800 text-xs text-gray-300">
-        <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-indigo-400" />
-          <span>Active Session Intent:</span>
-          <span className="font-bold text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-500/30">
-            {activeIntentLabel}
+        {/* System Badges */}
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-emerald-400" /> Sub-1000ms Latency SLA
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-blue-400" /> Instacart Primary Dataset
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> DPDP Act 2023 Compliant
           </span>
         </div>
-        <span className="text-gray-500 hidden sm:inline">FAISS HNSW Vector Retrieval (SLA &lt; 5ms)</span>
-      </div>
+      </section>
 
-      {/* Product Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="glass-panel h-80 rounded-xl animate-pulse bg-gray-900/40" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} onRefreshFeed={fetchFeed} />
-          ))}
-        </div>
-      )}
+      {/* SECTION 1: AI SHOPPING BRAIN CONTROL PANEL */}
+      <AIBrainPanel />
+
+      {/* SECTION 2 & 3: AI GENERATED RECOMMENDATIONS FEED & XAI */}
+      <PersonalizedFeed />
+
     </div>
   );
 }

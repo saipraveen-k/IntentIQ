@@ -1,22 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from typing import List
 from app.core.database import get_db
 from app.models.schemas import SemanticSearchRequest, SemanticSearchResponse, ProductDTO
-from app.models.domain import Product
+from app.repositories.product_repository import ProductRepository
 from app.agents.search_agent import search_agent
 from app.agents.guardrail_agent import guardrail_agent
 from app.agents.intent_agent import intent_agent
 
 router = APIRouter()
 
+def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductRepository:
+    return ProductRepository(db)
+
 @router.post("/search/semantic", response_model=SemanticSearchResponse)
 async def semantic_search(
     req: SemanticSearchRequest,
-    db: AsyncSession = Depends(get_db)
+    product_repo: ProductRepository = Depends(get_product_repository)
 ):
-    # Guardrail Verification
+    # Step 1: Guardrail Inspection
     guard_res = guardrail_agent.validate_and_sanitize(req.query)
     if not guard_res["is_safe"]:
         raise HTTPException(
@@ -26,50 +28,44 @@ async def semantic_search(
 
     clean_query = guard_res["sanitized_text"]
 
-    # Execute Search via Search Agent
-    candidates, intent_meta, latency = await search_agent.execute_search(clean_query, top_k=req.limit or 12)
+    # Step 2: Execute Semantic Search Agent
+    search_results, intent_meta, latency_ms = await search_agent.search(
+        query=clean_query,
+        product_repo=product_repo,
+        top_k=req.limit or 12
+    )
 
-    # Update User Intent Vector based on search query
+    # Step 3: Update Intent Vector
     extracted_intents = intent_meta.get("extracted_intents", ["Discovery"])
     primary_intent = extracted_intents[0] if extracted_intents else "Search"
-    await intent_agent.update_intent_vector(req.session_id, clean_query, primary_intent)
+    await intent_agent.update_session_intent(
+        session_id=req.session_id,
+        event_type="SEARCH",
+        item_text=clean_query,
+        category=primary_intent
+    )
 
     product_dtos: List[ProductDTO] = []
-
-    if candidates:
-        candidate_ids = [sku for sku, _ in candidates]
-        stmt = select(Product).where(Product.id.in_(candidate_ids))
-        res = await db.execute(stmt)
-        products = res.scalars().all()
-        prod_dict = {p.id: p for p in products}
-
-        budget_max = intent_meta.get("budget_max")
-
-        for sku, score in candidates:
-            if sku in prod_dict:
-                p = prod_dict[sku]
-
-                # Budget filter if extracted
-                if budget_max and p.price > budget_max:
-                    continue
-
-                dto = ProductDTO(
-                    id=p.id,
-                    title=p.title,
-                    description=p.description,
-                    category=p.category,
-                    sub_category=p.sub_category,
-                    price=p.price,
-                    original_price=p.original_price,
-                    rating=p.rating,
-                    review_count=p.review_count,
-                    image_url=p.image_url,
-                    attributes=p.attributes,
-                    in_stock=p.in_stock,
-                    xai_explanation=f"Strong vector match for query intents: {', '.join(extracted_intents)}",
-                    match_score=round(float(score), 3)
-                )
-                product_dtos.append(dto)
+    for item in search_results:
+        p = item["product"]
+        score = item["score"]
+        dto = ProductDTO(
+            id=p.id,
+            title=p.title,
+            description=p.description,
+            category=p.category,
+            sub_category=p.sub_category,
+            price=p.price,
+            original_price=p.original_price,
+            rating=p.rating,
+            review_count=p.review_count,
+            image_url=p.image_url,
+            attributes=p.attributes,
+            in_stock=p.in_stock,
+            xai_explanation=f"Matches search sub-intents: {', '.join(extracted_intents)}",
+            match_score=score
+        )
+        product_dtos.append(dto)
 
     return SemanticSearchResponse(
         query=req.query,

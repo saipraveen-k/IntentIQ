@@ -38,7 +38,12 @@ class RedisManager:
             self.use_fallback = True
             self.client = self.fallback
 
+    async def _ensure_connected(self):
+        if self.client is None:
+            await self.connect()
+
     async def get_json(self, key: str) -> Optional[Any]:
+        await self._ensure_connected()
         val = await self.client.get(key)
         if val:
             try:
@@ -48,6 +53,7 @@ class RedisManager:
         return None
 
     async def set_json(self, key: str, value: Any, ttl: int = 1800):
+        await self._ensure_connected()
         val_str = json.dumps(value)
         if self.use_fallback:
             await self.fallback.setex(key, ttl, val_str)
@@ -55,6 +61,7 @@ class RedisManager:
             await self.client.setex(key, ttl, val_str)
 
     async def delete_key(self, key: str):
+        await self._ensure_connected()
         if self.use_fallback:
             await self.fallback.delete(key)
         else:

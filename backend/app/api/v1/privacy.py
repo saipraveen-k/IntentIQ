@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import delete
 from app.core.database import get_db
 from app.models.schemas import PrivacyPurgeRequest, PrivacyPurgeResponse
-from app.models.domain import TelemetryEvent, UserSession
+from app.models.domain import ClickstreamEvent, UserSession
 from app.core.redis_client import redis_manager
 
 router = APIRouter()
@@ -17,8 +17,8 @@ async def purge_user_privacy_data(
     # 1. Flush Redis Intent Vector
     await redis_manager.delete_key(f"user_intent:{req.session_id}")
 
-    # 2. Delete Telemetry Events from Database
-    del_stmt = delete(TelemetryEvent).where(TelemetryEvent.session_id == req.session_id)
+    # 2. Delete Clickstream Events from Database
+    del_stmt = delete(ClickstreamEvent).where(ClickstreamEvent.session_id == req.session_id)
     res = await db.execute(del_stmt)
     purged_count = res.rowcount or 0
 

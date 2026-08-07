@@ -1,156 +1,174 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, use } from 'react';
-import { ShoppingCart, Star, Sparkles, Layers, PackageCheck, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { api, BundleResponse, Product } from '@/lib/api';
-import { useAppStore } from '@/store/useStore';
-import { ProductCard } from '@/components/feed/ProductCard';
+import { ArrowLeft, Sparkles, Star, ShoppingBag, CheckCircle2, ShieldCheck, Tag, Info, Package, Layers } from 'lucide-react';
+import { api, BundleResponse, Product } from '../../../lib/api';
+import { useStore } from '../../../store/useStore';
+import { ProductCard } from '../../../components/feed/ProductCard';
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const productId = resolvedParams.id;
-  const addToCart = useAppStore((state) => state.addToCart);
+export default function ProductDetailPage() {
+  const params = useParams();
+  const productId = params.id as string;
+  const { addToCart, activeIntentLabel } = useStore();
 
   const [bundleData, setBundleData] = useState<BundleResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadBundle() {
+    const fetchDetails = async () => {
       setLoading(true);
       try {
         const data = await api.getBundle(productId);
         setBundleData(data);
       } catch (e) {
-        console.error("Bundle error", e);
+        console.warn('Bundle detail notice:', e);
       } finally {
         setLoading(false);
       }
-    }
-    loadBundle();
+    };
+    if (productId) fetchDetails();
   }, [productId]);
 
-  if (loading || !bundleData) {
-    return <div className="text-gray-400 text-sm p-8 text-center animate-pulse">Loading Product & Bundle Engine...</div>;
+  if (loading) {
+    return (
+      <div className="glass-panel p-12 rounded-3xl text-center text-slate-400 animate-pulse space-y-4">
+        <Sparkles className="w-8 h-8 text-blue-400 animate-spin mx-auto" />
+        <p className="text-sm font-semibold">Retrieving Instacart Product Metadata & Bundle Graph...</p>
+      </div>
+    );
   }
 
-  const { base_product, complete_the_look, frequently_bought_together, bundle_discount_pct, original_total, discounted_total } = bundleData;
+  const product = bundleData?.base_product;
+  if (!product) {
+    return (
+      <div className="glass-panel p-12 rounded-3xl text-center space-y-4">
+        <h2 className="text-xl font-bold text-white">Product Not Found</h2>
+        <Link href="/" className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl inline-block">
+          Return Home
+        </Link>
+      </div>
+    );
+  }
 
-  const handleAddBundleToCart = () => {
-    addToCart(base_product);
-    complete_the_look.forEach((p) => addToCart(p));
-  };
+  const completeLook = bundleData?.complete_the_look || [];
+  const frequentlyBought = bundleData?.frequently_bought_together || [];
+  const allBundled = [...completeLook, ...frequentlyBought];
 
   return (
-    <div className="space-y-8">
-      {/* Back Button */}
-      <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Personalized Feed
+    <div className="space-y-12">
+      
+      {/* Navigation */}
+      <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Back to AI Discovery
       </Link>
 
-      {/* Main Product Showcase */}
-      <div className="glass-panel p-6 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-8 border border-gray-800">
-        {/* Left: Product Image */}
-        <div className="aspect-square rounded-xl overflow-hidden bg-gray-900 border border-gray-800">
-          <img src={base_product.image_url} alt={base_product.title} className="w-full h-full object-cover" />
+      {/* Main Product Hero Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 glass-panel p-6 lg:p-10 rounded-3xl border border-white/10 shadow-2xl">
+        
+        {/* Large Product Hero Image */}
+        <div className="relative w-full h-96 lg:h-[420px] rounded-2xl bg-slate-900 overflow-hidden border border-white/10">
+          <img
+            src={product.image_url}
+            alt={product.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-4 left-4 glass-pill px-3 py-1 rounded-full text-xs font-bold text-emerald-400 border border-emerald-400/30 flex items-center gap-1.5 shadow-lg">
+            <Sparkles className="w-4 h-4" />
+            <span>98% Intent Match</span>
+          </div>
         </div>
 
-        {/* Right: Info */}
-        <div className="flex flex-col justify-between">
-          <div>
-            <span className="px-2.5 py-1 rounded-md bg-indigo-950/60 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
-              {base_product.category}
-            </span>
-            <h1 className="text-2xl font-bold text-white mt-3 mb-2">{base_product.title}</h1>
-            
-            <div className="flex items-center gap-2 mb-4 text-xs text-gray-400">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="font-bold text-gray-200">{base_product.rating}</span>
-              <span>({base_product.review_count} verified reviews)</span>
-            </div>
-
-            <p className="text-sm text-gray-300 mb-6 leading-relaxed">
-              {base_product.description}
-            </p>
-
-            <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-extrabold text-white">₹{base_product.price.toLocaleString()}</span>
-              {base_product.original_price && (
-                <span className="text-sm text-gray-500 line-through">₹{base_product.original_price.toLocaleString()}</span>
+        {/* Product Details & Actions */}
+        <div className="flex flex-col justify-between space-y-6">
+          
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                Department: {product.category}
+              </span>
+              {product.sub_category && (
+                <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-white/10">
+                  Aisle: {product.sub_category}
+                </span>
               )}
             </div>
-          </div>
 
-          <button
-            onClick={() => addToCart(base_product)}
-            className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            Add Single Product to Cart
-          </button>
-        </div>
-      </div>
+            <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">{product.title}</h1>
 
-      {/* COMPLETE THE LOOK BUNDLE WIDGET (AI BUNDLE AGENT) */}
-      <div className="glass-panel p-6 rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/40 via-gray-900 to-gray-900 space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-indigo-500/20 pb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-accent-cyan" />
-              <h2 className="text-lg font-bold text-white">Complete the Look — Intent Bundle</h2>
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1 text-amber-400 font-bold">
+                <Star className="w-4 h-4 fill-amber-400" />
+                <span>{product.rating.toFixed(1)}</span>
+                <span className="text-slate-500 font-normal">({product.review_count} reviews)</span>
+              </div>
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Instacart Verified Stock
+              </span>
             </div>
-            <p className="text-xs text-indigo-300">
-              AI Bundle Agent visual pairing (Save {bundle_discount_pct}% when bought as a set)
+
+            <p className="text-sm text-slate-300 leading-relaxed pt-2">
+              {product.description || `Sourced from Instacart ${product.category} department.`}
             </p>
           </div>
 
-          <button
-            onClick={handleAddBundleToCart}
-            className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-accent-purple to-accent-cyan text-gray-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all hover:scale-105"
-          >
-            <PackageCheck className="w-4 h-4" />
-            Add Entire Bundle to Cart (Save ₹{(original_total - discounted_total).toFixed(0)})
-          </button>
-        </div>
-
-        {/* Bundle Items Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Base Product Card */}
-          <div className="p-3 rounded-xl bg-gray-900/80 border border-indigo-500/30 flex items-center gap-3">
-            <img src={base_product.image_url} alt={base_product.title} className="w-16 h-16 rounded-lg object-cover" />
-            <div>
-              <span className="text-[10px] uppercase font-bold text-indigo-400">Selected Item</span>
-              <h4 className="text-xs font-semibold text-gray-200 line-clamp-1">{base_product.title}</h4>
-              <p className="text-xs font-bold text-gray-100 mt-1">₹{base_product.price.toLocaleString()}</p>
+          {/* Pricing & Add Button */}
+          <div className="border-t border-white/10 pt-4 space-y-4">
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-extrabold text-white">₹{product.price.toFixed(2)}</span>
+              {product.original_price && (
+                <span className="text-sm text-slate-500 line-through">₹{product.original_price.toFixed(2)}</span>
+              )}
+              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">
+                15% Bundle Savings Eligible
+              </span>
             </div>
+
+            <button
+              onClick={() => addToCart(product)}
+              className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Add Product To Instacart Basket
+            </button>
           </div>
 
-          {/* Complementary Item 1 */}
-          {complete_the_look[0] && (
-            <div className="p-3 rounded-xl bg-gray-900/80 border border-gray-800 flex items-center gap-3">
-              <img src={complete_the_look[0].image_url} alt={complete_the_look[0].title} className="w-16 h-16 rounded-lg object-cover" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-accent-cyan">Complementary Pair</span>
-                <h4 className="text-xs font-semibold text-gray-200 line-clamp-1">{complete_the_look[0].title}</h4>
-                <p className="text-xs font-bold text-gray-100 mt-1">₹{complete_the_look[0].price.toLocaleString()}</p>
-              </div>
+          {/* Customer Journey Insight Card */}
+          <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/20 text-xs space-y-2">
+            <div className="flex items-center gap-1.5 font-bold text-blue-400">
+              <Info className="w-4 h-4" /> Customer Journey Insight
             </div>
-          )}
+            <p className="text-slate-300 leading-relaxed">
+              Customers viewing {product.title} in {product.category} frequently add complementary aisle items within 45 seconds of session initiation.
+            </p>
+          </div>
 
-          {/* Complementary Item 2 */}
-          {complete_the_look[1] && (
-            <div className="p-3 rounded-xl bg-gray-900/80 border border-gray-800 flex items-center gap-3">
-              <img src={complete_the_look[1].image_url} alt={complete_the_look[1].title} className="w-16 h-16 rounded-lg object-cover" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-accent-cyan">Complementary Pair</span>
-                <h4 className="text-xs font-semibold text-gray-200 line-clamp-1">{complete_the_look[1].title}</h4>
-                <p className="text-xs font-bold text-gray-100 mt-1">₹{complete_the_look[1].price.toLocaleString()}</p>
-              </div>
-            </div>
-          )}
         </div>
+
       </div>
+
+      {/* COMPLETE THE BASKET BUNDLES */}
+      {allBundled.length > 0 && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-xl font-bold text-white">Complete The Basket Bundles</h2>
+            </div>
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              Save 15% Extra When Bought Together
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {allBundled.map((bundledProd) => (
+              <ProductCard key={bundledProd.id} product={bundledProd} />
+            ))}
+          </div>
+        </section>
+      )}
+
     </div>
   );
 }

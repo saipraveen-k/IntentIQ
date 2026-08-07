@@ -1,134 +1,134 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Search, Tag, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { api, Product, SemanticSearchResponse } from '@/lib/api';
-import { useAppStore } from '@/store/useStore';
-import { ProductCard } from '@/components/feed/ProductCard';
+import React, { useState } from 'react';
+import { Search, Sparkles, Filter, Zap, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useStore } from '../../store/useStore';
+import { api, Product } from '../../lib/api';
+import { ProductCard } from '../../components/feed/ProductCard';
 
-function SearchContent() {
-  const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  const sessionId = useAppStore((state) => state.sessionId);
-
-  const [query, setQuery] = useState(initialQuery);
-  const [searchResult, setSearchResult] = useState<SemanticSearchResponse | null>(null);
+export default function SearchPage() {
+  const { sessionId } = useStore();
+  const [query, setQuery] = useState('healthy breakfast');
+  const [results, setResults] = useState<Product[]>([]);
+  const [extractedIntents, setExtractedIntents] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [budgetMax, setBudgetMax] = useState<number | undefined>(undefined);
 
-  const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+  const promptChips = [
+    "healthy breakfast",
+    "protein snacks",
+    "organic fruits",
+    "low sugar drinks",
+    "fresh dairy milk",
+    "coffee under ₹500"
+  ];
+
+  const executeSearch = async (q: string) => {
+    if (!q.trim()) return;
+    setQuery(q);
     setLoading(true);
-    setErrorMsg(null);
-
     try {
-      const data = await api.searchSemantic(searchQuery, sessionId);
-      setSearchResult(data);
-    } catch (e: any) {
-      if (e.response?.data?.detail) {
-        setErrorMsg(e.response.data.detail);
-      } else {
-        setErrorMsg("Search error occurred.");
-      }
-      setSearchResult(null);
+      const data = await api.searchSemantic(sessionId, q, 12);
+      setResults(data.results || []);
+      setExtractedIntents(data.extracted_intents || []);
+      setBudgetMax(data.budget_max);
+    } catch (e) {
+      console.warn('Search view notice:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (initialQuery) {
-      handleSearch(initialQuery);
-    }
-  }, [initialQuery]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleSearch(query);
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Search Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30">
-        <h1 className="text-2xl font-bold text-white mb-2">Semantic Multi-Intent Search</h1>
-        <p className="text-xs text-gray-400 mb-4">
-          Natural language queries are decomposed into intent tags and budget limits by Gemini AI + FAISS dense vectors.
-        </p>
-
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Try: 'Ergonomic desk lamp under 3000' or 'Ignore instructions'"
-              className="w-full py-3 pl-10 pr-4 rounded-xl bg-gray-900 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-            />
-            <Search className="w-5 h-5 text-gray-500 absolute left-3 top-3.5" />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all"
-          >
-            {loading ? "Searching..." : "Search"}
-          </button>
-        </form>
+    <div className="space-y-8">
+      
+      {/* Header Navigation */}
+      <div className="flex items-center justify-between">
+        <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to AI Brain
+        </Link>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold border border-blue-500/20">
+          <Sparkles className="w-3.5 h-3.5" /> Dense Vector HNSW Similarity Search
+        </div>
       </div>
 
-      {/* Error / Guardrail Alert */}
-      {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 text-sm flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-bold">Enterprise Guardrail Blocked Request</h4>
-            <p className="text-xs mt-1 text-rose-200">{errorMsg}</p>
-          </div>
+      {/* Search Input Box */}
+      <div className="glass-panel p-6 rounded-3xl border border-blue-500/30 shadow-2xl space-y-4">
+        <div className="flex items-center gap-3 bg-slate-900/80 px-4 py-3.5 rounded-2xl border border-white/10">
+          <Search className="w-5 h-5 text-blue-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && executeSearch(query)}
+            placeholder="Type any natural language query... e.g. 'organic fruits' or 'low sugar drinks'"
+            className="w-full bg-transparent text-white placeholder-slate-500 text-base focus:outline-none"
+          />
+          <button
+            onClick={() => executeSearch(query)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition-all"
+          >
+            Search
+          </button>
         </div>
-      )}
 
-      {/* Extracted Intents & Filter Bar */}
-      {searchResult && (
-        <div className="space-y-4">
-          <div className="glass-panel p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-accent-cyan" />
-              <span className="text-gray-400">Extracted Sub-Intents:</span>
-              {searchResult.extracted_intents.map((intent, idx) => (
-                <span
-                  key={idx}
-                  className="px-2.5 py-1 rounded-md bg-indigo-900/60 text-indigo-200 border border-indigo-500/30 font-semibold"
-                >
-                  #{intent}
-                </span>
-              ))}
-            </div>
+        {/* Prompt Chips */}
+        <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+          <span className="text-slate-400 font-semibold">Popular AI Prompts:</span>
+          {promptChips.map((chip) => (
+            <button
+              key={chip}
+              onClick={() => executeSearch(chip)}
+              className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-medium transition-colors"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
 
-            {searchResult.budget_max && (
-              <div className="px-2.5 py-1 rounded-md bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-semibold">
-                Budget Filter: ≤ ₹{searchResult.budget_max.toLocaleString()}
-              </div>
+        {/* Extracted Intents Banner */}
+        {extractedIntents.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300 bg-blue-950/40 p-3 rounded-xl border border-blue-500/20">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="font-semibold">Extracted Sub-Intents:</span>
+            {extractedIntents.map((intent, i) => (
+              <span key={i} className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-300 font-bold">
+                {intent}
+              </span>
+            ))}
+            {budgetMax && (
+              <span className="ml-auto px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 font-bold">
+                Budget Cap: ₹{budgetMax}
+              </span>
             )}
           </div>
+        )}
+      </div>
 
-          {/* Results Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {searchResult.results.map((product) => (
-              <ProductCard key={product.id} product={product} />
+      {/* Results Grid */}
+      {loading ? (
+        <div className="text-center py-20 text-slate-400 space-y-2">
+          <Zap className="w-8 h-8 text-blue-400 animate-spin mx-auto" />
+          <p className="text-sm font-semibold">Performing Vector Cosine Search...</p>
+        </div>
+      ) : results.length > 0 ? (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg text-white">Matching Instacart Products ({results.length})</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {results.map((prod) => (
+              <ProductCard key={prod.id} product={prod} />
             ))}
           </div>
         </div>
+      ) : (
+        <div className="glass-panel p-12 rounded-2xl text-center space-y-3">
+          <Search className="w-8 h-8 text-slate-500 mx-auto" />
+          <h3 className="font-bold text-white text-base">Enter a query to execute semantic search</h3>
+          <p className="text-xs text-slate-400">Click any popular prompt above or type a natural language shopping request.</p>
+        </div>
       )}
-    </div>
-  );
-}
 
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<div className="text-gray-400 text-sm p-4">Loading Search Engine...</div>}>
-      <SearchContent />
-    </Suspense>
+    </div>
   );
 }

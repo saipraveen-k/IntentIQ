@@ -1,27 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from typing import List
 from app.core.database import get_db
 from app.models.schemas import BundleResponse, ProductDTO
-from app.models.domain import Product
+from app.repositories.product_repository import ProductRepository
+from app.repositories.bundle_repository import BundleRepository
 from app.agents.bundle_agent import bundle_agent
+from app.models.domain import Product
 
 router = APIRouter()
+
+def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductRepository:
+    return ProductRepository(db)
+
+def get_bundle_repository(db: AsyncSession = Depends(get_db)) -> BundleRepository:
+    return BundleRepository(db)
 
 @router.get("/bundle/{product_id}", response_model=BundleResponse)
 async def get_product_bundle(
     product_id: str,
-    db: AsyncSession = Depends(get_db)
+    product_repo: ProductRepository = Depends(get_product_repository),
+    bundle_repo: BundleRepository = Depends(get_bundle_repository)
 ):
-    stmt = select(Product).where(Product.id == product_id)
-    res = await db.execute(stmt)
-    base_prod = res.scalar_one_or_none()
-
+    base_prod = await product_repo.get_by_id(product_id)
     if not base_prod:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    bundles = await bundle_agent.generate_bundles(db, base_prod)
+    bundles = await bundle_agent.get_or_create_bundles(
+        base_product=base_prod,
+        product_repo=product_repo,
+        bundle_repo=bundle_repo
+    )
 
     def to_dto(p: Product) -> ProductDTO:
         return ProductDTO(
@@ -39,19 +48,12 @@ async def get_product_bundle(
             in_stock=p.in_stock
         )
 
-    base_dto = to_dto(base_prod)
-    look_dtos = [to_dto(p) for p in bundles["complete_the_look"]]
-    fbt_dtos = [to_dto(p) for p in bundles["frequently_bought_together"]]
-
-    orig_total = base_prod.price + sum(p.price for p in bundles["complete_the_look"])
-    disc_total = round(orig_total * 0.85, 2) # 15% Bundle Savings
-
     return BundleResponse(
         base_product_id=product_id,
-        base_product=base_dto,
-        complete_the_look=look_dtos,
-        frequently_bought_together=fbt_dtos,
-        bundle_discount_pct=15.0,
-        original_total=orig_total,
-        discounted_total=disc_total
+        base_product=to_dto(base_prod),
+        complete_the_look=[to_dto(p) for p in bundles["complete_the_look"]],
+        frequently_bought_together=[to_dto(p) for p in bundles["frequently_bought_together"]],
+        bundle_discount_pct=bundles["bundle_discount_pct"],
+        original_total=bundles["original_total"],
+        discounted_total=bundles["discounted_total"]
     )

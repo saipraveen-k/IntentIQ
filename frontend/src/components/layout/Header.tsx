@@ -1,107 +1,91 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Search, Sparkles, ShieldCheck, ShoppingCart, LayoutDashboard, Zap } from 'lucide-react';
-import { useAppStore } from '@/store/useStore';
+import { Brain, Search, ShoppingBag, Activity, ShieldCheck, Sparkles } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 export const Header: React.FC = () => {
-  const router = useRouter();
-  const [query, setQuery] = useState('');
-  const activeIntentLabel = useAppStore((state) => state.activeIntentLabel);
-  const consentGiven = useAppStore((state) => state.consentGiven);
-  const toggleConsent = useAppStore((state) => state.toggleConsent);
-  const cart = useAppStore((state) => state.cart);
-  const toggleCartOpen = useAppStore((state) => state.toggleCartOpen);
-
-  const cartTotalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
-  };
+  const { activeIntentLabel, intentConfidence, cart, toggleCart, toggleSearchModal, togglePrivacyModal } = useStore();
+  const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-gray-800/80 bg-background/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-accent-purple to-accent-cyan p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <div className="w-full h-full bg-background rounded-[10px] flex items-center justify-center">
-              <Zap className="w-5 h-5 text-accent-cyan group-hover:scale-110 transition-transform" />
+    <header className="sticky top-0 z-50 glass-panel border-b border-white/10 px-4 lg:px-8 py-3 transition-all">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        
+        {/* Logo & Tagline */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-emerald-400 p-[1px] shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-full h-full bg-[#0B1020] rounded-[11px] flex items-center justify-center">
+              <Brain className="w-5 h-5 text-blue-400 group-hover:text-emerald-400 transition-colors" />
             </div>
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-accent-cyan">
-              IntentIQ
-            </span>
-            <span className="hidden sm:inline-block ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              AI Hackathon MVP
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-lg tracking-tight text-white">IntentIQ</span>
+              <span className="px-2 py-0.5 text-[10px] font-semibold bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30">
+                AI Build 2026
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 hidden sm:block">Shopper Intent, Not Just History</p>
           </div>
         </Link>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearchSubmit} className="flex-1 max-w-lg relative">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search naturally (e.g., 'Minimalist desk lamp under 3000')..."
-            className="w-full py-2 pl-9 pr-4 rounded-xl bg-gray-900/90 border border-gray-800 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all"
-          />
-          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
-        </form>
-
-        {/* Active Intent Indicator */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs">
-          <Sparkles className="w-3.5 h-3.5 text-accent-cyan animate-pulse" />
-          <span className="text-gray-400">Intent:</span>
-          <span className="font-medium text-indigo-300 line-clamp-1 max-w-[140px]">{activeIntentLabel}</span>
+        {/* Live Intent Indicator Pill */}
+        <div className="hidden md:flex items-center gap-2 glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-slate-200 shadow-inner">
+          <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+          <span className="text-slate-400">Active Intent:</span>
+          <span className="text-white font-semibold">{activeIntentLabel}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping ml-1" />
+          <span className="text-emerald-400 font-bold">{Math.round(intentConfidence * 100)}%</span>
         </div>
 
-        {/* Action Controls */}
+        {/* Actions & Navigation */}
         <div className="flex items-center gap-3">
-          {/* DPDP Consent Toggle */}
+          
+          {/* Command-K Search Launcher */}
           <button
-            onClick={toggleConsent}
-            title={consentGiven ? "DPDP Consent: Active (Personalization ON)" : "DPDP Consent: Revoked (Personalization OFF)"}
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-              consentGiven
-                ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/30 hover:bg-emerald-900/50"
-                : "bg-rose-950/40 text-rose-300 border-rose-500/30 hover:bg-rose-900/50"
-            }`}
+            onClick={toggleSearchModal}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 text-xs font-medium border border-white/10 transition-colors"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">DPDP:</span>
-            <span>{consentGiven ? "ON" : "OFF"}</span>
+            <Search className="w-4 h-4 text-blue-400" />
+            <span className="hidden sm:inline">Semantic Search</span>
+            <kbd className="hidden lg:inline px-1.5 py-0.5 text-[10px] bg-slate-900 rounded text-slate-400 font-mono">⌘K</kbd>
           </button>
 
-          {/* Cart Icon */}
-          <button
-            onClick={toggleCartOpen}
-            className="relative p-2 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 transition-colors"
+          {/* AI Ops Center Link */}
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-xs font-medium border border-blue-500/20 transition-colors"
           >
-            <ShoppingCart className="w-4 h-4" />
-            {cartTotalItems > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-accent-cyan text-gray-950 font-bold text-[10px] flex items-center justify-center animate-bounce">
-                {cartTotalItems}
+            <Activity className="w-4 h-4" />
+            <span className="hidden sm:inline">AI Ops Center</span>
+          </Link>
+
+          {/* Privacy Purge Launcher */}
+          <button
+            onClick={togglePrivacyModal}
+            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 border border-white/10 transition-colors"
+            title="DPDP Privacy Control"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          </button>
+
+          {/* Cart Drawer Toggle */}
+          <button
+            onClick={toggleCart}
+            className="relative p-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-105"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            {totalCartCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-400 text-slate-950 font-bold text-[10px] flex items-center justify-center shadow-md animate-bounce">
+                {totalCartCount}
               </span>
             )}
           </button>
 
-          {/* AI Ops Dashboard Link */}
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-accent-purple hover:opacity-90 text-white text-xs font-semibold shadow-md shadow-indigo-500/20 transition-all"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">AI Ops</span>
-          </Link>
         </div>
+
       </div>
     </header>
   );

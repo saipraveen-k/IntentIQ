@@ -1,94 +1,93 @@
-"use client";
+'use client';
 
 import React from 'react';
-import { X, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
-import { useAppStore } from '@/store/useStore';
+import { ShoppingBag, X, Trash2, ArrowRight, Sparkles } from 'lucide-react';
+import { useStore } from '../../store/useStore';
 
 export const CartDrawer: React.FC = () => {
-  const isCartOpen = useAppStore((state) => state.isCartOpen);
-  const toggleCartOpen = useAppStore((state) => state.toggleCartOpen);
-  const cart = useAppStore((state) => state.cart);
-  const removeFromCart = useAppStore((state) => state.removeFromCart);
-  const clearCart = useAppStore((state) => state.clearCart);
+  const { isCartOpen, toggleCart, cart, removeFromCart, clearCart } = useStore();
 
   if (!isCartOpen) return null;
 
-  const totalAmount = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-gray-900 border-l border-gray-800 h-full flex flex-col justify-between p-6 shadow-2xl">
-        <div>
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-indigo-400" />
-              <h2 className="font-bold text-lg text-gray-100">Your Cart</h2>
-            </div>
-            <button
-              onClick={toggleCartOpen}
-              className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-md glass-panel h-full border-l border-white/10 flex flex-col justify-between p-6 shadow-2xl">
+        
+        {/* Top Header */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-blue-400" />
+            <h3 className="font-bold text-lg text-white">Your Instacart Basket</h3>
           </div>
+          <button
+            onClick={toggleCart}
+            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Cart Items */}
+        {/* Cart Items List */}
+        <div className="flex-1 overflow-y-auto py-4 space-y-3">
           {cart.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 text-sm">
-              Your shopping bag is empty. Click on items in the feed to test personalized intent bundling!
+            <div className="text-center py-20 text-slate-400 space-y-2">
+              <ShoppingBag className="w-10 h-10 text-slate-600 mx-auto" />
+              <p className="text-sm font-semibold">Your basket is empty</p>
+              <p className="text-xs">Add AI recommendations to test basket co-occurrence models.</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-              {cart.map(({ product, quantity }) => (
-                <div
-                  key={product.id}
-                  className="glass-panel p-3 rounded-xl flex items-center justify-between gap-3"
-                >
+            cart.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-white/5"
+              >
+                <div className="flex items-center gap-3">
                   <img
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-12 h-12 rounded-lg object-cover bg-gray-800"
+                    src={item.product.image_url}
+                    alt={item.product.title}
+                    className="w-12 h-12 object-cover rounded-lg"
                   />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-semibold text-gray-200 line-clamp-1">{product.title}</h4>
-                    <p className="text-xs text-indigo-400 font-bold mt-0.5">
-                      ₹{product.price.toLocaleString()} x {quantity}
-                    </p>
+                  <div>
+                    <h4 className="font-semibold text-xs text-white line-clamp-1">{item.product.title}</h4>
+                    <p className="text-[11px] text-blue-400">Qty: {item.quantity} • ₹{item.product.price.toFixed(2)}</p>
                   </div>
-                  <button
-                    onClick={() => removeFromCart(product.id)}
-                    className="p-1 text-gray-500 hover:text-rose-400 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
-              ))}
-            </div>
+
+                <button
+                  onClick={() => removeFromCart(item.product.id)}
+                  className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))
           )}
         </div>
 
-        {/* Footer / Checkout */}
+        {/* Bottom Checkout */}
         {cart.length > 0 && (
-          <div className="border-t border-gray-800 pt-4 space-y-3">
-            <div className="flex justify-between items-center text-sm font-semibold text-gray-200">
-              <span>Total Amount:</span>
-              <span className="text-lg text-indigo-400">₹{totalAmount.toLocaleString()}</span>
+          <div className="border-t border-white/10 pt-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">Subtotal</span>
+              <span className="font-extrabold text-white text-base">₹{total.toFixed(2)}</span>
             </div>
-
+            
             <button
               onClick={() => {
-                alert('IntentIQ Purchase Complete! Intent Agent updated user affinity profile.');
+                alert('Order simulated successfully! Telemetry events updated.');
                 clearCart();
-                toggleCartOpen();
+                toggleCart();
               }}
-              className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 text-white font-bold text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
             >
-              Checkout Now
+              <span>Proceed to Checkout</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
