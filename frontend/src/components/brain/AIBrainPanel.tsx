@@ -121,7 +121,7 @@ export const AIBrainPanel: React.FC = () => {
             <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-2">Session Intent Timeline</span>
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {timelineSteps.map((step, idx) => (
-                <React.Fragment key={idx}>
+                <React.Fragment key={`${step}-${idx}`}>
                   <span className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap ${
                     idx === timelineSteps.length - 1
                       ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 font-semibold'

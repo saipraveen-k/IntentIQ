@@ -9,6 +9,7 @@ from app.core.redis_client import redis_manager
 
 router = APIRouter()
 
+@router.post("/privacy-purge", response_model=PrivacyPurgeResponse)
 @router.post("/user/privacy-purge", response_model=PrivacyPurgeResponse)
 async def purge_user_privacy_data(
     req: PrivacyPurgeRequest,

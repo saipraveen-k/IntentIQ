@@ -9,6 +9,7 @@ interface CartItem {
 interface AppState {
   sessionId: string;
   activeIntentLabel: string;
+  activePersona: string;
   intentConfidence: number;
   intentHistory: Array<{ timestamp: string; event_type: string; intent_label: string; confidence: number }>;
   cart: CartItem[];
@@ -18,6 +19,7 @@ interface AppState {
   
   // Actions
   setSessionId: (id: string) => void;
+  setActivePersona: (persona: string) => void;
   setActiveIntent: (label: string, confidence: number, history?: any[]) => void;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
@@ -31,6 +33,7 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   sessionId: 'sess_instacart_demo_101',
   activeIntentLabel: 'Fresh Produce & Pantry',
+  activePersona: 'healthy',
   intentConfidence: 0.94,
   intentHistory: [
     { timestamp: new Date().toISOString(), event_type: 'SEARCH', intent_label: 'Fresh Produce', confidence: 0.88 },
@@ -42,6 +45,7 @@ export const useStore = create<AppState>((set, get) => ({
   isSearchModalOpen: false,
 
   setSessionId: (id) => set({ sessionId: id }),
+  setActivePersona: (persona) => set({ activePersona: persona }),
   setActiveIntent: (label, confidence, history) => set((state) => ({
     activeIntentLabel: label,
     intentConfidence: confidence,

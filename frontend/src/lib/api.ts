@@ -10,8 +10,37 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
+export interface ScoreBreakdown {
+  semantic: number;
+  graph: number;
+  intent: number;
+  budget: number;
+  popularity: number;
+  diversity_bonus: number;
+  novelty_bonus: number;
+  final_score: number;
+}
+
+export interface DecisionTrace {
+  similarity: number;
+  basket_affinity: number;
+  persona_match: string;
+  budget_match: string;
+  diversity_bonus_applied: boolean;
+  final_rank: number;
+  final_score: number;
+}
+
+export interface StructuredXAI {
+  primary_reason: string;
+  confidence: number;
+  supporting_signals: string[];
+  intent_label: string;
+  decision_trace?: DecisionTrace;
+}
+
 export interface Product {
-  id: str;
+  id: string;
   title: string;
   description?: string;
   category: string;
@@ -25,7 +54,9 @@ export interface Product {
   attributes?: Record<string, any>;
   in_stock: boolean;
   xai_explanation?: string;
+  structured_xai?: StructuredXAI;
   match_score?: number;
+  score_breakdown?: ScoreBreakdown;
 }
 
 export interface BrainAnalyzeResponse {
@@ -85,9 +116,35 @@ export interface BundleResponse {
   base_product: Product;
   complete_the_look: Product[];
   frequently_bought_together: Product[];
+  substitutes?: Product[];
+  premium_alternatives?: Product[];
+  healthy_alternatives?: Product[];
   bundle_discount_pct: number;
   original_total: number;
   discounted_total: number;
+}
+
+export interface OfflineMetrics {
+  precision_at_5: number;
+  precision_at_10: number;
+  recall_at_10: number;
+  map_score: number;
+  mrr_score: number;
+  ndcg_at_10: number;
+  catalog_coverage_pct: number;
+  category_diversity_index: number;
+  novelty_score: number;
+  intra_list_diversity: number;
+}
+
+export interface OnlineMetrics {
+  ctr_pct: number;
+  cart_conversion_rate_pct: number;
+  bundle_acceptance_rate_pct: number;
+  avg_recommendation_latency_ms: number;
+  avg_search_latency_ms: number;
+  avg_brain_latency_ms: number;
+  est_avg_revenue_per_session: number;
 }
 
 export interface SystemHealthResponse {
@@ -110,6 +167,14 @@ export const api = {
       session_id: sessionId,
       search_query: query,
       clicked_products: clickedProducts,
+    });
+    return res.data;
+  },
+
+  switchPersona: async (sessionId: string, persona: string) => {
+    const res = await apiClient.post('/brain/persona', {
+      session_id: sessionId,
+      persona: persona,
     });
     return res.data;
   },
@@ -162,4 +227,3 @@ export const api = {
   },
 };
 
-type str = string;

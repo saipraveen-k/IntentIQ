@@ -46,8 +46,12 @@ async def semantic_search(
     )
 
     product_dtos: List[ProductDTO] = []
+    seen_ids = set()
     for item in search_results:
         p = item["product"]
+        if p.id in seen_ids:
+            continue
+        seen_ids.add(p.id)
         score = item["score"]
         dto = ProductDTO(
             id=p.id,

@@ -54,7 +54,8 @@ export default function ProductDetailPage() {
 
   const completeLook = bundleData?.complete_the_look || [];
   const frequentlyBought = bundleData?.frequently_bought_together || [];
-  const allBundled = [...completeLook, ...frequentlyBought];
+  const rawBundled = [...completeLook, ...frequentlyBought];
+  const allBundled = Array.from(new Map(rawBundled.map((p) => [p.id, p])).values());
 
   return (
     <div className="space-y-12">

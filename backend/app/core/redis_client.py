@@ -27,14 +27,18 @@ class RedisManager:
         self.use_fallback = False
         self.fallback = InMemoryRedisFallback()
 
+    @property
+    def is_fallback(self) -> bool:
+        return self.use_fallback
+
     async def connect(self):
         try:
             import redis.asyncio as aioredis
             self.client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
             await self.client.ping()
             logger.info("Connected to Redis server successfully.")
-        except Exception as e:
-            logger.warning(f"Redis unavailable ({e}). Using in-memory fallback cache.")
+        except Exception:
+            logger.info("Redis unavailable - Using local in-memory cache (Local Development)")
             self.use_fallback = True
             self.client = self.fallback
 
