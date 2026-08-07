@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Set
 from app.agents.intent_agent import intent_agent
 from app.core.faiss_manager import faiss_manager
 from app.repositories.product_repository import ProductRepository
