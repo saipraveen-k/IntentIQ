@@ -205,10 +205,18 @@ npm run dev
 ```
 Access the web application at `http://localhost:3000`.
 
-### Docker Compose
+### Docker Compose & Single-Page Application (SPA)
+To launch the complete IntentIQ stack—including the optimized Two-Tower FastAPI server, pre-trained neural networks, FAISS search index, and the stunning dark-mode e-commerce discovery UI—run:
+
 ```bash
 docker-compose up --build
 ```
+
+Once started, open `http://localhost:8000` in your browser.
+
+Here is a visual overview of the Discovery Engine storefront:
+
+![Storefront Screenshot](https://raw.githubusercontent.com/saipraveen-k/IntentIQ/main/docs/assets/storefront_placeholder.png)
 
 ---
 
