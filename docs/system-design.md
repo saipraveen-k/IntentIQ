@@ -5,22 +5,40 @@ This document details the system design, core modules, and domain interactions o
 ## System Topology
 
 ```mermaid
-flowchart TD
-    Client["Client Interface (Next.js 15)"] --> Gateway["API Gateway (FastAPI)"]
-    Gateway --> Orchestrator["AI Brain Orchestrator"]
-
-    subgraph Agents ["7 Domain AI Agents"]
-        AgentGuard["Guardrail Agent"]
-        AgentIntent["Intent Agent"]
-        AgentSearch["Search Agent"]
-        AgentRecs["Recommendation Agent"]
-        AgentBundle["Bundle Agent"]
-        AgentXAI["Explainability Agent"]
-        AgentAnalytics["Analytics Agent"]
+flowchart TB
+    subgraph Client ["Client Interface (Next.js 15)"]
+        UI["Storefront UI"]
+        Dashboard["AI Operations Dashboard"]
     end
 
+    subgraph Gateway ["API Layer (FastAPI Routers)"]
+        Router["REST Endpoint Router (/api/v1/*)"]
+    end
+
+    subgraph Engine ["AI Brain Engine"]
+        Orchestrator["AI Brain Orchestrator"]
+        
+        subgraph Agents ["7-Agent Execution Sequence"]
+            A1["1. Guardrail"] --> A2["2. Intent"]
+            A2 --> A3["3. Search"]
+            A3 --> A4["4. Recommendation"]
+            A4 --> A5["5. Bundle"]
+            A5 --> A6["6. Explainability"]
+            A6 --> A7["7. Analytics"]
+        end
+    end
+
+    subgraph Data ["Data & Vector Storage"]
+        DB[("PostgreSQL / SQLite")]
+        Cache[("Redis Session Cache")]
+        VectorStore[("FAISS HNSW Index")]
+    end
+
+    Client -- "User Events / Telemetry" --> Gateway
+    Gateway --> Orchestrator
     Orchestrator --> Agents
-    Agents --> Persistence["PostgreSQL / Redis / FAISS"]
+    Agents <--> Data
+    Agents -- "Unified Payload" --> Client
 ```
 
 ## Data Flow Principles

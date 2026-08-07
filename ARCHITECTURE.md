@@ -10,33 +10,36 @@ IntentIQ is designed as an async modular monolith backend paired with a Next.js 
 
 ```mermaid
 flowchart TB
-    subgraph ClientLayer ["Client Layer"]
+    subgraph ClientLayer ["1. Client Interface Layer"]
         Storefront["Next.js Storefront (React 19)"]
         Dashboard["AI Operations Dashboard"]
+        Tracker["Clickstream & Dwell Telemetry Tracker"]
     end
 
-    subgraph APILayer ["API Gateway & Controller"]
+    subgraph APILayer ["2. API Gateway & Controllers"]
         FastAPI["FastAPI Modular Monolith"]
-        TelemetryAPI["Telemetry Router"]
-        SearchAPI["Search Router"]
-        RecsAPI["Recommendations Router"]
-        BrainAPI["AI Brain Router"]
+        TelemetryAPI["Telemetry Router (/telemetry/event)"]
+        SearchAPI["Search Router (/search/semantic)"]
+        RecsAPI["Recommendations Router (/recommendations/feed)"]
+        BrainAPI["AI Brain Router (/brain/analyze)"]
     end
 
-    subgraph CoreEngine ["Core Intelligence Engine"]
+    subgraph CoreEngine ["3. AI Orchestration Engine"]
         Orchestrator["AIBrainOrchestrator"]
-        Agents["Agent Pipeline (7 Agents)"]
+        Pipeline["7-Agent Execution Pipeline"]
     end
 
-    subgraph DataStorage ["Data & Vector Layer"]
+    subgraph DataStorage ["4. Data & Vector Storage Layer"]
         PostgreSQL["PostgreSQL / SQLite Database"]
-        Redis["Redis Session Cache"]
-        FAISS["FAISS HNSW Vector Store"]
+        Redis["Redis User Intent Vector Cache"]
+        FAISS["FAISS HNSW Vector Store Index"]
     end
 
-    ClientLayer --> APILayer
+    ClientLayer -- "HTTP REST Requests" --> APILayer
     APILayer --> CoreEngine
-    CoreEngine --> DataStorage
+    CoreEngine --> Pipeline
+    Pipeline <--> DataStorage
+    CoreEngine -- "Unified Analysis Payload" --> ClientLayer
 ```
 
 ---

@@ -36,24 +36,55 @@ The system combines **FAISS HNSW dense vector search** for fast candidate retrie
 
 ## System Architecture
 
-```mermaid
-flowchart TD
-    Client["Next.js Storefront"] --> Router["FastAPI API Router"]
-    Router --> Orchestrator["AI Brain Orchestrator"]
+IntentIQ follows a decoupled 4-tier architecture designed for asynchronous vector retrieval, intent inference, and explainable recommendations.
 
-    subgraph Pipeline ["Multi-Agent Execution Sequence"]
-        Guardrail["Guardrail Agent"] --> Intent["Intent Agent"]
-        Intent --> Search["Search Agent"]
-        Search --> Recs["Recommendation Agent"]
-        Recs --> Bundle["Bundle Agent"]
-        Bundle --> XAI["Explainability Agent"]
-        XAI --> Analytics["Analytics Agent"]
+```mermaid
+flowchart TB
+    subgraph Client ["1. Frontend Storefront Layer (Next.js 15)"]
+        UI["Storefront UI & AI Ops Dashboard"]
+        Hook["Clickstream & Dwell Telemetry Tracker"]
     end
 
+    subgraph Gateway ["2. API & Routing Layer (FastAPI)"]
+        Router["REST Controllers (/api/v1/*)"]
+    end
+
+    subgraph Core ["3. AI Orchestration Layer"]
+        Orchestrator["AI Brain Orchestrator"]
+        
+        subgraph Pipeline ["Sequenced Agent Pipeline"]
+            A1["Guardrail Agent"] --> A2["Intent Agent"]
+            A2 --> A3["Search Agent"]
+            A3 --> A4["Recommendation Agent"]
+            A4 --> A5["Bundle Agent"]
+            A5 --> A6["Explainability Agent"]
+            A6 --> A7["Analytics Agent"]
+        end
+    end
+
+    subgraph Storage ["4. Data & Vector Storage Layer"]
+        DB[("PostgreSQL / SQLite Database")]
+        Cache[("Redis / In-Memory Session Cache")]
+        VectorDB[("FAISS HNSW Vector Store")]
+    end
+
+    UI -- "User Interaction Events" --> Hook
+    Hook -- "REST API Request" --> Router
+    Router --> Orchestrator
     Orchestrator --> Pipeline
-    Pipeline --> Storage["PostgreSQL / Redis / FAISS Vector Store"]
-    Pipeline --> Client
+    Pipeline <--> Storage
+    Pipeline -- "Unified Response Payload" --> UI
 ```
+
+### Architectural Layer Responsibilities
+
+| Layer | Primary Responsibilities |
+| :--- | :--- |
+| **1. Frontend Storefront** | Captures real-time clickstream events (dwell time, clicks, searches), renders dark glassmorphism UI components, and displays XAI rationales. |
+| **2. API Gateway** | Validates incoming HTTP payloads, handles CORS, serializes JSON responses, and routes endpoints. |
+| **3. AI Orchestration** | Coordinates 7 specialized agents in a single-pass sequence (`Guardrail` $\rightarrow$ `Intent` $\rightarrow$ `Search` $\rightarrow$ `Recommendation` $\rightarrow$ `Bundle` $\rightarrow$ `Explainability` $\rightarrow$ `Analytics`). |
+| **4. Data & Vector Storage** | Persists products, orders, and sessions in PostgreSQL; caches active user intent vectors in Redis; and executes sub-millisecond similarity search using FAISS. |
+
 
 ---
 
