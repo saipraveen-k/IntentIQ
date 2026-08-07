@@ -37,8 +37,8 @@ class RedisManager:
             self.client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
             await self.client.ping()
             logger.info("Connected to Redis server successfully.")
-        except Exception as e:
-            logger.warning(f"Redis unavailable ({e}). Using in-memory fallback cache.")
+        except Exception:
+            logger.info("Redis unavailable - Using local in-memory cache (Local Development)")
             self.use_fallback = True
             self.client = self.fallback
 

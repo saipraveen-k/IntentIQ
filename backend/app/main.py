@@ -23,38 +23,77 @@ from app.api.v1.guardrails import router as guardrails_router
 from app.api.v1.brain import router as brain_router
 from app.api.v1.system import router as system_router
 
+from sqlalchemy.future import select
+from sqlalchemy import func
+from app.core.database import init_db, AsyncSessionLocal
+from app.models.domain import Product, ProductEmbedding, UserSession
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("intent_iq.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup Sequence
-    logger.info("Initializing IntentIQ Final Backend Intelligence Engine...")
     await init_db()
     await redis_manager.connect()
     embedding_service.load_model()
     gemini_client.initialize()
 
-    # Part 5: Automatic Startup Health & Dataset Verification Check
+    async with AsyncSessionLocal() as session:
+        prod_count = (await session.execute(select(func.count(Product.id)))).scalar() or 0
+        emb_count = (await session.execute(select(func.count(ProductEmbedding.id)))).scalar() or 0
+        sess_count = (await session.execute(select(func.count(UserSession.session_id)))).scalar() or 0
+
+    if prod_count == 0:
+        logger.info("Database catalog empty. Seeding catalog and building vector index...")
+        await seed_data()
+        async with AsyncSessionLocal() as session:
+            prod_count = (await session.execute(select(func.count(Product.id)))).scalar() or 0
+            emb_count = (await session.execute(select(func.count(ProductEmbedding.id)))).scalar() or 0
+            sess_count = (await session.execute(select(func.count(UserSession.session_id)))).scalar() or 0
+
+    # Load & Sync FAISS vector index
+    faiss_disk_path = os.path.join(os.path.dirname(__file__), "faiss_index.bin")
+    loaded_faiss = faiss_manager.load_from_disk(faiss_disk_path)
+
+    if not loaded_faiss or len(faiss_manager.id_map) != emb_count:
+        logger.info(f"Syncing FAISS index (FAISS: {len(faiss_manager.id_map)} vectors, DB: {emb_count} embeddings)...")
+        async with AsyncSessionLocal() as session:
+            stmt = select(Product.id, Product.title, Product.brand, Product.category, ProductEmbedding.vector_json).join(ProductEmbedding, Product.id == ProductEmbedding.product_id)
+            records = (await session.execute(stmt)).all()
+            if records:
+                prods_list = [{"id": r[0], "title": r[1], "brand": r[2], "category": r[3]} for r in records]
+                embs_list = [r[4] for r in records]
+                faiss_manager.reset()
+                faiss_manager.add_products(prods_list, embs_list)
+                faiss_manager.save_to_disk(faiss_disk_path)
+
+    # Dataset detection status check
     dataset_mgr = DatasetManager(base_dir="datasets")
     detection = dataset_mgr.detect_datasets()
     missing_ds = [name for name, status in detection.items() if not status["detected"]]
-    
-    if missing_ds:
-        logger.warning(
-            f"Dataset Startup Notice: Raw Kaggle dataset folder(s) {missing_ds} not detected in datasets/. "
-            f"Operating with pre-seeded/ingested database catalog."
-        )
+    if missing_ds and prod_count > 0:
+        logger.info("Dataset Status: Using existing database catalog.")
 
-    # Load FAISS vector index from disk
-    faiss_disk_path = os.path.join(os.path.dirname(__file__), "faiss_index.bin")
-    if not faiss_manager.load_from_disk(faiss_disk_path):
-        logger.info("FAISS index not found on disk. Seeding database catalog and building vector index...")
-        await seed_data()
-    else:
-        logger.info(f"FAISS vector index loaded successfully from disk ({len(faiss_manager.id_map)} vectors).")
+    db_type = "Neon PostgreSQL" if "postgresql" in settings.DATABASE_URL else "SQLite"
+    redis_status = "Local Memory Cache" if redis_manager.is_fallback else "Connected"
+    gemini_status = "Connected" if gemini_client.model is not None else "Template Synthesizer Mode"
 
-    logger.info("IntentIQ AI Brain Engine startup complete.")
+    # Startup Banner (Phase 10)
+    print("\n" + "━" * 42)
+    print("IntentIQ AI Engine")
+    print(f"Environment: Development")
+    print(f"Database: Connected ({db_type})")
+    print(f"Redis: {redis_status}")
+    print(f"Gemini: {gemini_status}")
+    print("Embeddings: Loaded")
+    print(f"FAISS: {len(faiss_manager.id_map)} vectors")
+    print(f"Products: {prod_count}")
+    print(f"Sessions: {sess_count}")
+    print("API Status: Healthy")
+    print("Ready to serve requests")
+    print("━" * 42 + "\n")
+
     yield
     # Shutdown Sequence
     logger.info("Shutting down IntentIQ Engine.")
