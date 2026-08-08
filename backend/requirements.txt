@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 fastapi>=0.110.0
 uvicorn[standard]>=0.31.1
 pydantic>=2.9.0,<3.0.0
@@ -8,9 +9,12 @@ asyncpg>=0.29.0
 aiosqlite>=0.20.0
 redis>=5.0.3
 faiss-cpu>=1.8.0
+torch>=2.2.0
+transformers>=4.38.0
 sentence-transformers>=2.6.0
-google-generativeai==0.7.2
-protobuf<5.0.0dev,>=3.19.5
+google-generativeai>=0.8.0
+protobuf>=4.25.3,<6.0.0
+grpcio>=1.62.0
 numpy>=1.26.4
 python-multipart>=0.0.9
 httpx>=0.28.1
@@ -20,6 +24,5 @@ aiofiles>=23.2.1
 mlxtend>=0.23.1
 firebase-admin>=6.2.0
 pyjwt>=2.8.0
-
-
-
+scikit-learn>=1.4.0
+pandas>=2.2.0

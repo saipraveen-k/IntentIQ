@@ -21,7 +21,10 @@ class CrossEncoderService:
         try:
             from sentence_transformers import CrossEncoder
             logger.info(f"Loading CrossEncoder model: {self.model_name}...")
-            self.model = CrossEncoder(self.model_name)
+            try:
+                self.model = CrossEncoder(self.model_name, local_files_only=True)
+            except Exception:
+                self.model = CrossEncoder(self.model_name)
             self.is_loaded = True
             logger.info("CrossEncoder model loaded successfully.")
         except Exception as e:

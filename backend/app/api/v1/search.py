@@ -29,7 +29,7 @@ async def semantic_search(
     clean_query = guard_res["sanitized_text"]
 
     # Step 2: Execute Semantic Search Agent
-    search_results, intent_meta, latency_ms = await search_agent.search(
+    search_results, intent_meta, latency_ms, retrieval_mode = await search_agent.search(
         query=clean_query,
         product_repo=product_repo,
         top_k=req.limit or 12

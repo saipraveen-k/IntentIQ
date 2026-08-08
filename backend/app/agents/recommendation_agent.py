@@ -49,13 +49,22 @@ class RecommendationAgent:
             candidate_ids = []
             faiss_scores_map = {}
 
-        retrieval_count = len(candidate_ids)
-
-        # Fetch DB products for retrieved candidate IDs
-        if candidate_ids:
+        # Fallback 1: PostgreSQL embedding vector search if FAISS unavailable/empty
+        if not candidate_ids and vector and len(vector) == 384:
+            pg_vector_results = await product_repo.vector_search(vector, limit=retrieval_limit)
+            if pg_vector_results:
+                retrieved_prods = [prod for prod, _ in pg_vector_results]
+                candidate_ids = [str(p.id) for p in retrieved_prods]
+                faiss_scores_map = {str(prod.id): float(score) for prod, score in pg_vector_results}
+            else:
+                retrieved_prods = await product_repo.get_popular_products(limit=50)
+        elif candidate_ids:
             retrieved_prods = await product_repo.get_by_ids(candidate_ids)
         else:
             retrieved_prods = await product_repo.get_popular_products(limit=50)
+
+        retrieval_count = len(retrieved_prods)
+
 
         # Stage 2: Graph Expansion (Fetch complementary & frequently bought graph neighbors up to 350)
         candidate_pool = {p.id: p for p in retrieved_prods}

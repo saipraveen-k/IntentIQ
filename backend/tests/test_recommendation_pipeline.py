@@ -13,7 +13,9 @@ from app.core.embeddings import embedding_service
 from app.agents.intent_agent import intent_agent
 from app.pipeline.recommendation_memory import recommendation_memory_manager
 
-@pytest.fixture(autouse=True)
+import pytest_asyncio
+
+@pytest_asyncio.fixture(autouse=True)
 async def init_services():
     from app.core.database import init_db
     await init_db()
@@ -21,6 +23,7 @@ async def init_services():
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     canonical_faiss_path = os.path.join(base_dir, "data", "indexes", "products.faiss")
     faiss_manager.load_from_disk(canonical_faiss_path)
+
 
 @pytest.mark.asyncio
 async def test_01_fresh_session_cold_start():

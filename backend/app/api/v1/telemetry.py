@@ -32,14 +32,16 @@ async def record_telemetry_event(
     # 2. Update session intent vector if product_id is provided
     if event.product_id:
         prod = await product_repo.get_by_id(event.product_id)
-        if prod:
-            await intent_agent.update_session_intent(
-                session_id=event.session_id,
-                event_type=event.event_type,
-                item_text=f"{prod.title} {prod.description or ''}",
-                category=prod.category,
-                dwell_time_ms=event.dwell_time_ms or 0,
-                session_repo=session_repo
-            )
+        item_text = f"{prod.title} {prod.description or ''}" if prod else f"Product {event.product_id}"
+        category = prod.category if prod else ""
+        await intent_agent.update_session_intent(
+            session_id=event.session_id,
+            event_type=event.event_type,
+            product_id=event.product_id,
+            item_text=item_text,
+            category=category,
+            dwell_time_ms=event.dwell_time_ms or 0,
+            session_repo=session_repo
+        )
 
     return {"status": "ACCEPTED", "session_id": event.session_id}

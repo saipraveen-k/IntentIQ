@@ -41,6 +41,9 @@ class FAISSIndexManager:
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
             filepath = os.path.join(base_dir, "data", "indexes", "products.faiss")
             
+        if self.is_initialized and self.index and self.canonical_path == filepath:
+            return True
+
         meta_filepath = filepath + ".meta"
         self.canonical_path = filepath
 

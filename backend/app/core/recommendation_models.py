@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Tuple, Optional
 
 logger = logging.getLogger("intent_iq.recommendation_models")
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 class RecommendationModelService:
     """

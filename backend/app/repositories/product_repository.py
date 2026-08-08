@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.future import select
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -167,3 +167,38 @@ class ProductRepository:
         await self.db.commit()
         await self.db.refresh(prod)
         return prod
+
+    async def vector_search(self, query_vector: List[float], limit: int = 50) -> List[Tuple[Product, float]]:
+        """
+        PostgreSQL embedding similarity search fallback when FAISS is unavailable.
+        Computes cosine similarity between query_vector and ProductEmbedding rows.
+        """
+        try:
+            import numpy as np
+            stmt = select(Product, ProductEmbedding).join(ProductEmbedding, Product.id == ProductEmbedding.product_id).where(Product.in_stock == True).limit(200)
+            res = await self.db.execute(stmt)
+            rows = res.all()
+            if not rows:
+                return []
+            
+            q_arr = np.array(query_vector, dtype=np.float32)
+            q_norm = np.linalg.norm(q_arr)
+            if q_norm > 0:
+                q_arr = q_arr / q_norm
+
+            scored_prods = []
+            for prod, emb in rows:
+                if emb and emb.vector_json:
+                    v_arr = np.array(emb.vector_json, dtype=np.float32)
+                    v_norm = np.linalg.norm(v_arr)
+                    if v_norm > 0:
+                        v_arr = v_arr / v_norm
+                    sim = float(np.dot(q_arr, v_arr))
+                    scored_prods.append((prod, sim))
+
+            scored_prods.sort(key=lambda x: x[1], reverse=True)
+            return scored_prods[:limit]
+        except Exception as e:
+            logger.warning(f"PostgreSQL vector search fallback error: {e}")
+            return []
+

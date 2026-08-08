@@ -17,13 +17,15 @@ class BoundedSessionMemory:
         self.preferred_brands: Dict[str, int] = {}
         self.price_range: Dict[str, float] = {"min": 0.0, "max": 1000.0}
 
-    def record_view(self, product_id: str, department: Optional[str] = None, brand: Optional[str] = None):
+    def record_view(self, product_id: str, department: Optional[str] = None, brand: Optional[str] = None, cooldown_minutes: float = 15.0):
         if product_id in self.viewed_products:
             self.viewed_products.remove(product_id)
         self.viewed_products.append(product_id)
         if len(self.viewed_products) > 20:
             self.viewed_products.pop(0)
 
+        now = time.time()
+        self.cooldown_timestamps[product_id] = now + (cooldown_minutes * 60.0)
         self.positive_signals.add(product_id)
         if department:
             self.favorite_departments[department] = self.favorite_departments.get(department, 0) + 1

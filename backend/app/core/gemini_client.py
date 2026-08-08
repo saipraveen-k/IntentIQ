@@ -12,12 +12,10 @@ try:
     # pyrefly: ignore [missing-import]
     import google.generativeai as genai
     genai_module = genai
-except ImportError:
-    try:
-        from google import genai
-        genai_module = genai
-    except ImportError:
-        genai_module = None
+except (ImportError, Exception, BaseException) as e:
+    logger.debug(f"google.generativeai package import failed ({e}). Operating in Template Synthesizer fallback mode.")
+    genai_module = None
+
 
 class GeminiClient:
     def __init__(self):
@@ -27,6 +25,11 @@ class GeminiClient:
         self.model = None
         self._exp_cache: Dict[str, str] = {}
         self._intent_cache: Dict[str, Dict[str, Any]] = {}
+
+    @property
+    def status(self) -> str:
+        return "connected" if self.model is not None else "fallback_mode"
+
 
     def initialize(self):
         if self.api_keys and genai_module is not None:

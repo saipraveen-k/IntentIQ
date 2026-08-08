@@ -11,17 +11,24 @@ class EmbeddingService:
         self.dimension = settings.VECTOR_DIMENSION
         self._cache: Dict[str, List[float]] = {}
 
+    @property
+    def status(self) -> str:
+        return "loaded" if self.model is not None else "fallback_mode"
+
     def load_model(self):
+        if self.model is not None:
+            return
         try:
             from sentence_transformers import SentenceTransformer
-            logger.info(f"Loading SentenceTransformers model: {settings.EMBEDDING_MODEL_NAME}")
-            self.model = SentenceTransformer(settings.EMBEDDING_MODEL_NAME)
+            logger.info(f"Loading SentenceTransformers model: {settings.EMBEDDING_MODEL_NAME} (CPU)")
+            self.model = SentenceTransformer(settings.EMBEDDING_MODEL_NAME, device="cpu")
             logger.info("SentenceTransformers model loaded successfully. Pre-warming model inference engine...")
             self.encode_batch(["Warmup initial vector model query 1", "Warmup initial vector model query 2"])
             logger.info("SentenceTransformers model pre-warmed successfully.")
         except Exception as e:
             logger.warning(f"Could not load SentenceTransformers ({e}). Using normalized deterministic hash embeddings fallback.")
             self.model = None
+
 
     def encode(self, text: str) -> List[float]:
         if text in self._cache:

@@ -19,7 +19,7 @@ async def get_personalized_feed(
     product_repo: ProductRepository = Depends(get_product_repository)
 ):
     # Execute Hybrid Multi-Stage Recommendation Funnel
-    recommendations, active_label, confidence = await recommendation_agent.get_hybrid_recommendations(
+    recommendations, active_label, confidence, diagnostics = await recommendation_agent.get_hybrid_recommendations(
         session_id=session_id,
         product_repo=product_repo,
         limit=limit

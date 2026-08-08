@@ -1,6 +1,6 @@
 {
   "manifest_version": "1.0.0",
-  "created_at": "2026-08-08T07:22:16.333214",
+  "created_at": "2026-08-08T07:50:51.504243",
   "dataset_provider": "Instacart",
   "product_count": 5278,
   "embedding_count": 5278,
