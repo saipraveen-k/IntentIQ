@@ -34,7 +34,7 @@ class RedisManager:
     async def connect(self):
         try:
             import redis.asyncio as aioredis
-            self.client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+            self.client = aioredis.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=0.2, socket_timeout=0.2)
             await self.client.ping()
             logger.info("Connected to Redis server successfully.")
         except Exception:

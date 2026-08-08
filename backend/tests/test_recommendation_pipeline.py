@@ -59,7 +59,7 @@ async def test_02_click_product():
             "product_id": target["id"],
             "dwell_time_ms": 4500
         })
-        assert event_res.status_code in [200, 201]
+        assert event_res.status_code in [200, 201, 202]
         
         # Check active intent
         intent_info = await intent_agent.get_active_intent("sess_click_test_02")

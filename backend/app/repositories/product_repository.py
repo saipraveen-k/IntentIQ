@@ -57,48 +57,18 @@ class ProductRepository:
             return []
 
         # Deduplicate & preserve ordering
-        unique_ids = list(dict.fromkeys(product_ids))
+        str_ids = [str(pid) for pid in product_ids]
+        unique_ids = list(dict.fromkeys(str_ids))
         found_products: Dict[str, Product] = {}
-        missing_ids = []
 
-        # Check Cache for bulk IDs
-        for pid in unique_ids:
-            cached_data = await redis_manager.get_json(f"cache:product:{pid}")
-            if cached_data:
-                found_products[pid] = Product(**cached_data)
-            else:
-                missing_ids.append(pid)
-
-        # Execute single bulk SQL IN query for cache misses
-        if missing_ids:
-            stmt = select(Product).where(Product.id.in_(missing_ids))
-            res = await self.db.execute(stmt)
-            db_prods = list(res.scalars().all())
-            for prod in db_prods:
-                found_products[prod.id] = prod
-                prod_dict = {
-                    "id": prod.id,
-                    "title": prod.title,
-                    "description": prod.description,
-                    "category_id": prod.category_id,
-                    "brand_id": prod.brand_id,
-                    "category": prod.category,
-                    "brand": prod.brand,
-                    "sub_category": prod.sub_category,
-                    "price": prod.price,
-                    "original_price": prod.original_price,
-                    "rating": prod.rating,
-                    "review_count": prod.review_count,
-                    "image_url": prod.image_url,
-                    "attributes": prod.attributes,
-                    "in_stock": prod.in_stock,
-                    "view_count": prod.view_count,
-                    "purchase_count": prod.purchase_count
-                }
-                await redis_manager.set_json(f"cache:product:{prod.id}", prod_dict, ttl=3600)
+        stmt = select(Product).where(Product.id.in_(unique_ids))
+        res = await self.db.execute(stmt)
+        db_prods = list(res.scalars().all())
+        for prod in db_prods:
+            found_products[str(prod.id)] = prod
 
         # Return ordered list matching original requested product_ids
-        return [found_products[pid] for pid in product_ids if pid in found_products]
+        return [found_products[pid] for pid in unique_ids if pid in found_products]
 
     async def get_all(self, limit: int = 50, offset: int = 0) -> List[Product]:
         stmt = select(Product).where(Product.in_stock == True).order_by(Product.rating.desc()).offset(offset).limit(limit)

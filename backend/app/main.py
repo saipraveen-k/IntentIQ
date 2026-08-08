@@ -260,7 +260,7 @@ async def health_check():
     overall_healthy = (faiss_state == "ready" or emb_state == "loaded")
 
     return {
-        "status": "healthy" if overall_healthy else "degraded",
+        "status": "HEALTHY" if overall_healthy else "DEGRADED",
         "database": db_state,
         "redis": redis_state,
         "gemini": gemini_state,
@@ -269,6 +269,7 @@ async def health_check():
         "dataset": dataset_state,
         "recommendation_engine": rec_state
     }
+
 
 
 @app.get("/")

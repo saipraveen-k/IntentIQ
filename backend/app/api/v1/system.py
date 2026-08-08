@@ -66,7 +66,7 @@ async def get_system_health(db: AsyncSession = Depends(get_db)) -> Dict[str, Any
     health_latency = round((time.time() - start_t) * 1000.0, 2)
 
     return {
-        "status": "healthy" if (faiss_valid or prod_count > 0) else "degraded",
+        "status": "HEALTHY" if (faiss_valid or prod_count > 0) else "DEGRADED",
         "database": "connected",
         "redis": "fallback_in_memory" if redis_manager.is_fallback else "connected",
         "gemini": gemini_client.status,
@@ -74,6 +74,7 @@ async def get_system_health(db: AsyncSession = Depends(get_db)) -> Dict[str, Any
         "faiss": "ready" if faiss_valid else "degraded",
         "dataset": "verified",
         "recommendation_engine": "ready" if (is_fully_healthy or prod_count > 0) else "degraded",
+
 
         "dataset": {
             "provider": "Instacart",

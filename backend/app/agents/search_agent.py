@@ -75,6 +75,20 @@ class SemanticSearchAgent:
         # Step 4: Batch Product Retrieval
         products = await product_repo.get_by_ids(candidate_ids) if candidate_ids else []
 
+        # If FAISS product IDs did not match DB products, fall back to SQL search
+        if not products:
+            logger.warning("FAISS candidate IDs did not match catalog products. Falling back to SQL search...")
+            sql_products = await product_repo.get_by_category_or_dept(query, limit=top_k * 2)
+            if sql_products:
+                products = sql_products
+                scores_map = {str(p.id): 0.75 for p in sql_products}
+                retrieval_mode = "SQL_FALLBACK"
+            else:
+                pop_products = await product_repo.get_popular_products(limit=top_k)
+                products = pop_products
+                scores_map = {str(p.id): 0.60 for p in pop_products}
+                retrieval_mode = "POPULARITY_FALLBACK"
+
         # Step 5: Filter & Rerank Candidates
         filtered_products = []
         seen_ids = set()
@@ -93,6 +107,14 @@ class SemanticSearchAgent:
                 "score": round(float(similarity), 3)
             })
 
+        # Final safety fallback if all products were filtered out by budget
+        if not filtered_products and products:
+            for prod in products[:top_k]:
+                filtered_products.append({
+                    "product": prod,
+                    "score": 0.50
+                })
+
         # Step 6: CrossEncoder Rerank on top candidate subset (max 20)
         if len(filtered_products) > 1 and cross_encoder_service.is_loaded:
             candidate_texts = [f"{item['product'].title} {item['product'].category}" for item in filtered_products[:20]]
@@ -106,13 +128,15 @@ class SemanticSearchAgent:
         else:
             final_results = filtered_products[:top_k]
 
-        # Store in Cache
-        cache_items = [{"id": str(item["product"].id), "score": item["score"]} for item in final_results]
-        await redis_manager.set_json(cache_key, {
-            "results": cache_items,
-            "meta": intent_metadata,
-            "retrieval_mode": retrieval_mode
-        }, ttl=1800)
+
+        # Store in Cache if results were retrieved
+        if final_results:
+            cache_items = [{"id": str(item["product"].id), "score": item["score"]} for item in final_results]
+            await redis_manager.set_json(cache_key, {
+                "results": cache_items,
+                "meta": intent_metadata,
+                "retrieval_mode": retrieval_mode
+            }, ttl=1800)
 
         latency_ms = round((time.time() - start_time) * 1000.0, 2)
         logger.info(f"Semantic Search for '{query}' executed in {latency_ms}ms via [{retrieval_mode}] ({len(final_results)} results).")

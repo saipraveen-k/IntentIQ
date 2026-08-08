@@ -96,11 +96,12 @@ class AIBrainOrchestrator:
         
         if search_query and guardrail_result["is_safe"]:
             clean_query = guardrail_result["sanitized_text"]
-            results_raw, search_meta, _ = await search_agent.search(
+            results_raw, search_meta, _, _ = await search_agent.search(
                 query=clean_query,
                 product_repo=product_repo,
                 top_k=10
             )
+
             extracted_search_intents = search_meta.get("extracted_intents", [])
             for item in results_raw:
                 p = item["product"]
@@ -126,11 +127,12 @@ class AIBrainOrchestrator:
         # Step 4: Recommendation Agent Execution (Hybrid Top-10)
         # ---------------------------------------------------------------------
         t0 = time.time()
-        recs_raw, active_label, confidence = await recommendation_agent.get_hybrid_recommendations(
+        recs_raw, active_label, confidence, rec_diagnostics = await recommendation_agent.get_hybrid_recommendations(
             session_id=session_id,
             product_repo=product_repo,
             limit=10
         )
+
         t_recs = round((time.time() - t0) * 1000.0, 2)
         latency_breakdown["RecommendationAgent"] = t_recs
         agent_trace.append({
