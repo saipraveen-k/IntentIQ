@@ -1,0 +1,338 @@
+{
+  "raw_instacart": {
+    "aisles.csv": {
+      "rows": 134,
+      "columns": [
+        "aisle_id",
+        "aisle"
+      ],
+      "null_counts": {
+        "aisle_id": 0,
+        "aisle": 0
+      },
+      "size_bytes": 2603
+    },
+    "departments.csv": {
+      "rows": 21,
+      "columns": [
+        "department_id",
+        "department"
+      ],
+      "null_counts": {
+        "department_id": 0,
+        "department": 0
+      },
+      "size_bytes": 270
+    },
+    "products.csv": {
+      "rows": 49688,
+      "columns": [
+        "product_id",
+        "product_name",
+        "aisle_id",
+        "department_id"
+      ],
+      "null_counts": {
+        "product_id": 0,
+        "product_name": 0,
+        "aisle_id": 0,
+        "department_id": 0
+      },
+      "size_bytes": 2166953,
+      "unique_products": 49688,
+      "min_product_id": 1,
+      "max_product_id": 49688
+    },
+    "orders.csv": {
+      "rows": 3421083,
+      "columns": [
+        "order_id",
+        "user_id",
+        "eval_set",
+        "order_number",
+        "order_dow",
+        "order_hour_of_day",
+        "days_since_prior_order"
+      ],
+      "null_counts": {
+        "order_id": 0,
+        "user_id": 0,
+        "eval_set": 0,
+        "order_number": 0,
+        "order_dow": 0,
+        "order_hour_of_day": 0,
+        "days_since_prior_order": 206209
+      },
+      "size_bytes": 108968645,
+      "unique_users": 206209,
+      "min_user_id": 1,
+      "max_user_id": 206209,
+      "unique_orders": 3421083
+    },
+    "order_products__train.csv": {
+      "rows": 1384617,
+      "columns": [
+        "order_id",
+        "product_id",
+        "add_to_cart_order",
+        "reordered"
+      ],
+      "null_counts": {
+        "order_id": 0,
+        "product_id": 0,
+        "add_to_cart_order": 0,
+        "reordered": 0
+      },
+      "size_bytes": 24680147,
+      "unique_products": 39123,
+      "min_product_id": 1,
+      "max_product_id": 49688,
+      "unique_orders": 131209
+    },
+    "order_products__prior.csv": {
+      "size_bytes": 577550706,
+      "rows": 32434489,
+      "columns": [
+        "order_id",
+        "product_id",
+        "add_to_cart_order",
+        "reordered"
+      ]
+    }
+  },
+  "processed_artifacts": {
+    "data/processed/product_metadata.parquet": {
+      "rows": 5000,
+      "columns": [
+        "product_id",
+        "product_name",
+        "aisle_id",
+        "department_id",
+        "aisle",
+        "department"
+      ],
+      "null_counts": {
+        "product_id": 0,
+        "product_name": 0,
+        "aisle_id": 0,
+        "department_id": 0,
+        "aisle": 0,
+        "department": 0
+      },
+      "size_bytes": 142054,
+      "unique_products": 5000,
+      "min_product_id": 1,
+      "max_product_id": 49683
+    },
+    "data/processed/clickstream.parquet": {
+      "rows": 1508092,
+      "columns": [
+        "order_id",
+        "product_id",
+        "event_type",
+        "timestamp"
+      ],
+      "null_counts": {
+        "order_id": 0,
+        "product_id": 0,
+        "event_type": 0,
+        "timestamp": 0
+      },
+      "size_bytes": 8352705,
+      "unique_products": 5000,
+      "min_product_id": 1,
+      "max_product_id": 49683
+    },
+    "data/processed/search_queries.parquet": {
+      "rows": 100000,
+      "columns": [
+        "order_id",
+        "query",
+        "product_ids_clicked"
+      ],
+      "null_counts": {
+        "order_id": 0,
+        "query": 0,
+        "product_ids_clicked": 0
+      },
+      "size_bytes": 2351304
+    },
+    "product_embeddings.npy": {
+      "shape": [
+        5000,
+        64
+      ],
+      "dtype": "float32",
+      "size_bytes": 1280128,
+      "norm_mean": 0.40851661562919617,
+      "has_nan": false
+    },
+    "faiss_index.bin": {
+      "ntotal": 5000,
+      "dimension": 64,
+      "is_trained": true,
+      "size_bytes": 172116
+    },
+    "app/faiss_index.bin": {
+      "ntotal": 950,
+      "dimension": 384,
+      "is_trained": true,
+      "size_bytes": 1459245
+    },
+    "product_id_to_index.pkl": {
+      "type": "dict",
+      "length": 5000
+    },
+    "index_to_product_id.pkl": {
+      "type": "list",
+      "length": 5000,
+      "min": 1,
+      "max": 49683
+    },
+    "product_id_list.pkl": {
+      "type": "list",
+      "length": 5000,
+      "min": 1,
+      "max": 49683
+    },
+    "data/processed/mappings.pkl": {
+      "type": "dict",
+      "length": 4
+    },
+    "mappings.product_to_idx": 5000,
+    "mappings.user_to_idx": 67062,
+    "mappings.aisle_to_idx": 124,
+    "mappings.dept_to_idx": 21,
+    "app/faiss_index.bin.meta": {
+      "type": "dict",
+      "length": 2
+    },
+    "app/seeds/catalog.json": 10,
+    "app/seeds/catalog_100.json": 50,
+    "app/seeds/catalog_full.json": 950
+  },
+  "model_checkpoints": {
+    "two_tower.pth": {
+      "keys": [
+        "session_encoder_state",
+        "two_tower_state"
+      ],
+      "session_encoder_emb_shape": [
+        49690,
+        32
+      ],
+      "user_tower_user_emb_shape": [
+        206211,
+        32
+      ],
+      "product_tower_prod_emb_shape": [
+        49690,
+        32
+      ],
+      "product_tower_aisle_emb_shape": [
+        136,
+        16
+      ],
+      "product_tower_dept_emb_shape": [
+        23,
+        16
+      ]
+    },
+    "multitask_ncf.pth": {
+      "mlp.0.weight": [
+        512,
+        193
+      ],
+      "mlp.0.bias": [
+        512
+      ],
+      "mlp.1.weight": [
+        512
+      ],
+      "mlp.1.bias": [
+        512
+      ],
+      "mlp.1.running_mean": [
+        512
+      ],
+      "mlp.1.running_var": [
+        512
+      ],
+      "mlp.1.num_batches_tracked": [],
+      "mlp.4.weight": [
+        256,
+        512
+      ],
+      "mlp.4.bias": [
+        256
+      ],
+      "mlp.5.weight": [
+        256
+      ],
+      "mlp.5.bias": [
+        256
+      ],
+      "mlp.5.running_mean": [
+        256
+      ],
+      "mlp.5.running_var": [
+        256
+      ],
+      "mlp.5.num_batches_tracked": [],
+      "mlp.8.weight": [
+        128,
+        256
+      ],
+      "mlp.8.bias": [
+        128
+      ],
+      "mlp.9.weight": [
+        128
+      ],
+      "mlp.9.bias": [
+        128
+      ],
+      "mlp.9.running_mean": [
+        128
+      ],
+      "mlp.9.running_var": [
+        128
+      ],
+      "mlp.9.num_batches_tracked": [],
+      "click_head.weight": [
+        1,
+        128
+      ],
+      "click_head.bias": [
+        1
+      ],
+      "cart_head.weight": [
+        1,
+        128
+      ],
+      "cart_head.bias": [
+        1
+      ],
+      "purchase_head.weight": [
+        1,
+        128
+      ],
+      "purchase_head.bias": [
+        1
+      ]
+    }
+  },
+  "database": {
+    "categories": 8,
+    "brands": 49,
+    "user_sessions": 552,
+    "clickstream_events": 3012,
+    "recommendation_caches": 0,
+    "analytics_metrics": 10,
+    "audit_logs": 2,
+    "products": 50,
+    "product_images": 0,
+    "product_embeddings": 50,
+    "product_bundles": 50
+  }
+}

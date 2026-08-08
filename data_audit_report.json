@@ -1,0 +1,124 @@
+{
+  "audit_version": "1.0.0",
+  "generated_at": "2026-08-08T07:12:00Z",
+  "pipeline_status": "DEGRADED_AND_INCONSISTENT",
+  "root_cause_analysis": {
+    "multiple_faiss_indexes": "Two disparate FAISS index files exist: root 'faiss_index.bin' (5,000 vectors, dimension 64) and 'app/faiss_index.bin' (950 vectors, dimension 384 from mock catalog). Services loaded conflicting indexes.",
+    "embedding_dimension_mismatch": "'product_embeddings.npy' is 64d (from TwoTower), 'SentenceTransformer(all-MiniLM-L6-v2)' is 384d, FAISS is mixed 64d/384d, and MultiTaskNCF input assumes 193d.",
+    "product_id_namespace_fragmentation": "Database contains 50 mock string IDs ('prod_201'..), parquet contains integer IDs (1..49688), schema mapper creates 'insta_{id}', and FAISS uses offset indices with inconsistent mappings.",
+    "association_rules_truncation": "apriori was run on an arbitrary 20,000-row sample of prior orders with min_support=0.01 across 6,984 sparse products, resulting in only 8 products passing the threshold."
+  },
+  "raw_datasets": {
+    "instacart": {
+      "aisles.csv": {
+        "rows": 134,
+        "columns": ["aisle_id", "aisle"],
+        "unique_aisles": 134,
+        "null_count": 0,
+        "size_bytes": 2603
+      },
+      "departments.csv": {
+        "rows": 21,
+        "columns": ["department_id", "department"],
+        "unique_departments": 21,
+        "null_count": 0,
+        "size_bytes": 270
+      },
+      "products.csv": {
+        "rows": 49688,
+        "columns": ["product_id", "product_name", "aisle_id", "department_id"],
+        "unique_products": 49688,
+        "id_range": [1, 49688],
+        "null_count": 0,
+        "size_bytes": 2166953
+      },
+      "orders.csv": {
+        "rows": 3421083,
+        "columns": ["order_id", "user_id", "eval_set", "order_number", "order_dow", "order_hour_of_day", "days_since_prior_order"],
+        "unique_users": 206209,
+        "unique_orders": 3421083,
+        "size_bytes": 108968645
+      },
+      "order_products__train.csv": {
+        "rows": 1384617,
+        "columns": ["order_id", "product_id", "add_to_cart_order", "reordered"],
+        "unique_products": 39123,
+        "size_bytes": 24680147
+      },
+      "order_products__prior.csv": {
+        "rows": 32434489,
+        "columns": ["order_id", "product_id", "add_to_cart_order", "reordered"],
+        "size_bytes": 577550706
+      }
+    }
+  },
+  "processed_artifacts": {
+    "product_metadata.parquet": {
+      "row_count": 5000,
+      "columns": ["product_id", "product_name", "aisle_id", "department_id", "aisle", "department"],
+      "unique_products": 5000,
+      "status": "SUBSET_CATALOG"
+    },
+    "clickstream.parquet": {
+      "row_count": 1508092,
+      "columns": ["order_id", "product_id", "event_type", "timestamp"],
+      "unique_products": 5000
+    },
+    "search_queries.parquet": {
+      "row_count": 100000,
+      "columns": ["order_id", "query", "product_ids_clicked"]
+    },
+    "product_embeddings.npy": {
+      "shape": [5000, 64],
+      "dimension": 64,
+      "status": "NON_CANONICAL_DIMENSION_64"
+    },
+    "faiss_indexes": {
+      "faiss_index.bin": {
+        "location": "backend/faiss_index.bin",
+        "ntotal": 5000,
+        "dimension": 64,
+        "status": "MISMATCHED_DIMENSION_64"
+      },
+      "app/faiss_index.bin": {
+        "location": "backend/app/faiss_index.bin",
+        "ntotal": 950,
+        "dimension": 384,
+        "status": "MOCK_CATALOG_SUBSET_950"
+      }
+    },
+    "mappings.pkl": {
+      "product_to_idx": 5000,
+      "user_to_idx": 67062,
+      "aisle_to_idx": 124,
+      "dept_to_idx": 21
+    },
+    "database_intentiq.db": {
+      "products_table_rows": 50,
+      "product_embeddings_rows": 50,
+      "product_bundles_rows": 50,
+      "user_sessions_rows": 552,
+      "clickstream_events_rows": 3012,
+      "status": "MOCK_MIGRATION_OUT_OF_SYNC"
+    }
+  },
+  "canonical_target_spec": {
+    "product_id_type": "integer or normalized string 'prod_{id}' with 1-to-1 bijection",
+    "embedding_dimension": 384,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "faiss_canonical_path": "backend/data/indexes/products.faiss",
+    "catalog_coverage": "49,688 full Instacart products",
+    "basket_cooccurrences": "Computed across full prior/train orders with min_support threshold calibrated to catalog",
+    "ranking_pipeline_stages": 6,
+    "ranking_weights": {
+      "semantic": 0.30,
+      "purchase_probability": 0.20,
+      "graph_affinity": 0.15,
+      "intent_affinity": 0.15,
+      "popularity": 0.10,
+      "budget": 0.05,
+      "diversity": 0.03,
+      "novelty": 0.02
+    }
+  }
+}
