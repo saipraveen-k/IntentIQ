@@ -10,8 +10,7 @@ import torch
 import faiss
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from mlxtend.frequent_patterns import apriori, association_rules
@@ -592,13 +591,24 @@ def health_check():
         "model_device": str(device)
     }
 
-# Mount static folder
-os.makedirs("static", exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
 @app.get("/")
-def read_index():
-    return FileResponse("static/index.html")
+def read_root():
+    return {
+        "service": "IntentIQ Recommendation & Discovery Engine API",
+        "status": "online",
+        "version": "1.0.0",
+        "documentation": "/docs",
+        "redoc": "/redoc",
+        "health": "/health",
+        "endpoints": {
+            "feed": "/api/v1/recommendations/feed",
+            "semantic_search": "/api/v1/search/semantic",
+            "bundle": "/api/v1/bundle",
+            "events": "/api/v1/event",
+            "persona": "/api/v1/user/persona",
+            "user_stats": "/api/v1/user/stats"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn

@@ -110,6 +110,19 @@ class ProductRepository:
         res = await self.db.execute(stmt)
         return list(res.scalars().all())
 
+    async def get_by_category_or_dept(self, category_query: str, limit: int = 40) -> List[Product]:
+        if not category_query or category_query == "all":
+            stmt = select(Product).where(Product.in_stock == True).order_by(Product.rating.desc()).limit(limit)
+        else:
+            q_lower = f"%{category_query.lower()}%"
+            stmt = select(Product).where(
+                (func.lower(Product.category).like(q_lower)) |
+                (func.lower(Product.sub_category).like(q_lower)) |
+                (func.lower(Product.title).like(q_lower))
+            ).where(Product.in_stock == True).order_by(Product.rating.desc()).limit(limit)
+        res = await self.db.execute(stmt)
+        return list(res.scalars().all())
+
     async def get_popular_products(self, limit: int = 10) -> List[Product]:
         cache_key = f"cache:popular:{limit}"
         cached = await redis_manager.get_json(cache_key)

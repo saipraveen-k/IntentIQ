@@ -14,8 +14,12 @@ logger = logging.getLogger("intent_iq.seed")
 async def seed_data():
     await init_db()
     
-    # Check catalog files
-    seed_file = "catalog_100.json" if os.path.exists(os.path.join(os.path.dirname(__file__), "catalog_100.json")) else "catalog.json"
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "catalog_full.json")):
+        seed_file = "catalog_full.json"
+    elif os.path.exists(os.path.join(os.path.dirname(__file__), "catalog_100.json")):
+        seed_file = "catalog_100.json"
+    else:
+        seed_file = "catalog.json"
     catalog_path = os.path.join(os.path.dirname(__file__), seed_file)
     
     if not os.path.exists(catalog_path):

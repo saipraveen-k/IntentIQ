@@ -74,3 +74,59 @@ async def get_personalized_feed(
         intent_confidence=confidence,
         products=product_dtos
     )
+
+@router.get("/catalog/category/{category_query}")
+async def get_products_by_category(
+    category_query: str,
+    limit: int = Query(40, ge=1, le=100),
+    product_repo: ProductRepository = Depends(get_product_repository)
+):
+    products = await product_repo.get_by_category_or_dept(category_query, limit=limit)
+    dtos = [
+        ProductDTO(
+            id=p.id,
+            title=p.title,
+            description=p.description,
+            category=p.category,
+            sub_category=p.sub_category,
+            price=p.price,
+            original_price=p.original_price,
+            rating=p.rating,
+            review_count=p.review_count,
+            image_url=p.image_url,
+            attributes=p.attributes,
+            in_stock=p.in_stock,
+            xai_explanation=f"Top product in {p.category}"
+        )
+        for p in products
+    ]
+    return {"category": category_query, "total": len(dtos), "products": dtos}
+
+@router.get("/catalog/products")
+async def get_all_catalog_products(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    product_repo: ProductRepository = Depends(get_product_repository)
+):
+    products = await product_repo.get_all(limit=limit, offset=offset)
+    dtos = [
+        ProductDTO(
+            id=p.id,
+            title=p.title,
+            description=p.description,
+            category=p.category,
+            sub_category=p.sub_category,
+            price=p.price,
+            original_price=p.original_price,
+            rating=p.rating,
+            review_count=p.review_count,
+            image_url=p.image_url,
+            attributes=p.attributes,
+            in_stock=p.in_stock,
+            xai_explanation=f"Curated selection in {p.category}"
+        )
+        for p in products
+    ]
+    total_count = await product_repo.count()
+    return {"total": total_count, "limit": limit, "offset": offset, "products": dtos}
+

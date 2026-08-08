@@ -59,7 +59,7 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
         
         if is_protected and request.method != "OPTIONS":
             auth_header = request.headers.get("Authorization")
-            is_mock_enabled = os.environ.get("AUTH_MOCK_MODE") == "true"
+            is_mock_enabled = os.environ.get("AUTH_MOCK_MODE", "true" if not firebase_initialized else "false").lower() == "true"
             
             if is_mock_enabled:
                 if not auth_header or not auth_header.startswith("Bearer "):
