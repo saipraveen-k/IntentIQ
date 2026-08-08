@@ -141,3 +141,16 @@ class AuditLog(Base):
     session_id = Column(String, nullable=True)
     details = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, nullable=True, index=True)
+    product_id = Column(String, nullable=True, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    session_id = Column(String, nullable=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    query_text = Column(Text, nullable=True)
+    results_shown = Column(JSON, nullable=True)
+

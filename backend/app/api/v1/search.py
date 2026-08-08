@@ -39,7 +39,7 @@ async def semantic_search(
     extracted_intents = intent_meta.get("extracted_intents", ["Discovery"])
     primary_intent = extracted_intents[0] if extracted_intents else "Search"
     await intent_agent.update_session_intent(
-        session_id=req.session_id,
+        session_id=req.session_id or req.user_id or "default_session",
         event_type="SEARCH",
         item_text=clean_query,
         category=primary_intent

@@ -60,8 +60,9 @@ class FeedResponse(BaseModel):
 
 class SemanticSearchRequest(BaseModel):
     query: str
-    session_id: str
+    session_id: Optional[str] = "default_session"
     limit: Optional[int] = 12
+    user_id: Optional[str] = None
 
 class SemanticSearchResponse(BaseModel):
     query: str
