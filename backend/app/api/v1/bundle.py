@@ -17,6 +17,25 @@ def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductReposit
 def get_bundle_repository(db: AsyncSession = Depends(get_db)) -> BundleRepository:
     return BundleRepository(db)
 
+from pydantic import BaseModel
+
+class BundleRequest(BaseModel):
+    product_id: str
+
+@router.post("/bundle", response_model=BundleResponse)
+async def post_product_bundle(
+    req: BundleRequest,
+    product_repo: ProductRepository = Depends(get_product_repository),
+    bundle_repo: BundleRepository = Depends(get_bundle_repository),
+    db: AsyncSession = Depends(get_db)
+):
+    return await get_product_bundle(
+        product_id=req.product_id,
+        product_repo=product_repo,
+        bundle_repo=bundle_repo,
+        db=db
+    )
+
 @router.get("/bundle/{product_id}", response_model=BundleResponse)
 async def get_product_bundle(
     product_id: str,
@@ -59,11 +78,18 @@ async def get_product_bundle(
     raw_healthy = relationships.get("healthy_alternatives", [])
     healthy_list = [to_dto(x) for x in raw_healthy if isinstance(x, (dict, Product))] if isinstance(raw_healthy, list) else []
 
+    fbt_dtos = [to_dto(p) for p in bundles.get("frequently_bought_together", [])]
+    ctl_dtos = [to_dto(p) for p in bundles.get("complete_the_look", [])]
+    combined_items = fbt_dtos + ctl_dtos
+    if not combined_items and subs:
+        combined_items = subs[:3]
+
     return BundleResponse(
         base_product_id=product_id,
         base_product=to_dto(base_prod),
-        complete_the_look=[to_dto(p) for p in bundles.get("complete_the_look", [])],
-        frequently_bought_together=[to_dto(p) for p in bundles.get("frequently_bought_together", [])],
+        bundle_items=combined_items,
+        complete_the_look=ctl_dtos,
+        frequently_bought_together=fbt_dtos,
         substitutes=subs,
         premium_alternatives=prem,
         healthy_alternatives=healthy_list,

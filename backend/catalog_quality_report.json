@@ -1,0 +1,26 @@
+{
+  "total_products": 0,
+  "database": {},
+  "parquet": {},
+  "images": {
+    "valid_urls": 0,
+    "loremflickr_placeholders": 0,
+    "missing_urls": 0,
+    "unique_image_urls": 0
+  },
+  "taxonomy": {
+    "departments": {},
+    "categories": {},
+    "aisles": {}
+  },
+  "data_quality_scores": {
+    "metadata_completeness": "100.0%",
+    "category_consistency": "100.0%",
+    "image_validity": "0.0%",
+    "id_consistency": "100.0%",
+    "price_validity": "100.0%",
+    "graph_integrity": "100.0%",
+    "embedding_alignment": "100.0%",
+    "catalog_quality_score": "80.0 / 100"
+  }
+}

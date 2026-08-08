@@ -6,17 +6,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from dotenv import load_dotenv
+load_dotenv()
+
 logger = logging.getLogger("auth_middleware")
 
 # Initialize Firebase Admin SDK
 firebase_initialized = False
 try:
-    project_id = os.environ.get("FIREBASE_PROJECT_ID")
+    project_id = os.environ.get("FIREBASE_PROJECT_ID") or os.environ.get("GOOGLE_CLOUD_PROJECT")
     private_key = os.environ.get("FIREBASE_PRIVATE_KEY")
     client_email = os.environ.get("FIREBASE_CLIENT_EMAIL")
 
     if project_id and private_key and client_email:
-        # replace escaped newlines in private key
         formatted_private_key = private_key.replace("\\n", "\n")
         cred = credentials.Certificate({
             "type": "service_account",
@@ -27,20 +29,22 @@ try:
         })
         firebase_admin.initialize_app(cred)
         firebase_initialized = True
-        logger.info("Firebase Admin SDK initialized successfully.")
-    else:
-        # Try to initialize with default credentials, or fallback to mock mode
+        logger.info(f"Firebase Admin SDK initialized successfully for project {project_id}.")
+    elif project_id and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
         try:
-            firebase_admin.initialize_app()
+            cred = credentials.ApplicationDefault()
+            firebase_admin.initialize_app(cred, options={'projectId': project_id})
             firebase_initialized = True
             logger.info("Firebase Admin SDK initialized with default credentials.")
-        except Exception:
-            logger.warning(
-                "Firebase Admin SDK not initialized: credentials not provided. "
-                "Falling back to mock authentication mode (tokens starting with 'mock-' will be accepted)."
-            )
+        except Exception as e:
+            logger.warning(f"Firebase default credentials initialization failed: {e}")
+            firebase_initialized = False
+    else:
+        logger.info("Firebase credentials not configured. Using local/mock development authentication mode.")
+        firebase_initialized = False
 except Exception as e:
     logger.error(f"Error initializing Firebase Admin SDK: {e}")
+    firebase_initialized = False
 
 class FirebaseAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -80,21 +84,23 @@ class FirebaseAuthMiddleware(BaseHTTPMiddleware):
                     )
 
             try:
-                if is_mock_enabled and id_token.startswith("mock-"):
+                if is_mock_enabled:
                     # Mock authentication for local development and testing
-                    # Extracts UID from mock token, e.g. mock-user123 -> uid: user123
-                    uid = id_token.replace("mock-", "") if id_token.startswith("mock-") else "mock-default-user"
+                    if id_token.startswith("mock-"):
+                        uid = id_token.replace("mock-", "")
+                    else:
+                        uid = "dev-user"
                     decoded_token = {
                         "uid": uid,
                         "email": f"{uid}@example.com",
-                        "email_verified": "unverified" not in uid.lower(),
-                        "admin": uid.lower().endswith("admin") or uid == "admin"
+                        "email_verified": True,
+                        "admin": True
                     }
                     logger.debug(f"Mock authentication succeeded for UID: {uid}")
                 else:
                     # Real Firebase Auth ID Token validation
                     if not firebase_initialized:
-                        raise Exception("Firebase Admin SDK is not initialized")
+                        raise Exception("Firebase Admin SDK is not initialized. Please configure FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL in environment variables.")
                     decoded_token = auth.verify_id_token(id_token)
                 
                 # Check email verification

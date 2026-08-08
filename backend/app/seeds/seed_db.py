@@ -113,7 +113,7 @@ async def seed_data():
 
         # Module 4: FAISS Batch Insert & Disk Persistence
         faiss_manager.reset()
-        faiss_manager.add_products(added_products, embeddings)
+        faiss_manager.batch_insert(added_products, embeddings)
         
         # Save FAISS Index to disk
         index_disk_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "faiss_index.bin")

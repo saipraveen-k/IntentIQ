@@ -134,26 +134,7 @@ def build_canonical_catalog(target_product_count=5000):
     df_canonical = df_canonical.merge(df_aisles, on='aisle_id', how='left')
     df_canonical = df_canonical.merge(df_depts, on='department_id', how='left')
 
-    category_image_map = {
-        "produce": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600",
-        "dairy eggs": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=600",
-        "beverages": "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600",
-        "bakery": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600",
-        "frozen": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600",
-        "snacks": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=600",
-        "pantry": "https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=600",
-        "meat seafood": "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600",
-        "deli": "https://images.unsplash.com/photo-1544025162-d76694265947?w=600",
-        "canned goods": "https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600",
-        "dry goods pasta": "https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=600",
-        "breakfast": "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600",
-        "international": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600",
-        "household": "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600",
-        "personal care": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600",
-        "babies": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600",
-        "pets": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600",
-        "alcohol": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600"
-    }
+    from app.seeds.generate_full_catalog import resolve_image
 
     records = []
     for row in df_canonical.itertuples():
@@ -169,8 +150,7 @@ def build_canonical_catalog(target_product_count=5000):
         rating = round(3.8 + (h % 12) / 10.0, 1)
         review_c = 10 + (h % 450) + min(500, pop_count // 5)
         
-        dept_key = dept.lower()
-        img_url = category_image_map.get(dept_key, "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600")
+        img_url = resolve_image(name, dept, aisle)
 
         completeness_checks = [
             bool(name and len(name) > 2),

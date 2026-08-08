@@ -19,15 +19,25 @@ class ProductRepository:
         self.db = db
 
     async def get_by_id(self, product_id: str) -> Optional[Product]:
-        # Check cache first for sub-millisecond retrieval
-        cache_key = f"cache:product:{product_id}"
-        cached_data = await redis_manager.get_json(cache_key)
-        if cached_data:
-            return Product(**cached_data)
+        if not product_id:
+            return None
+        pid_str = str(product_id)
+        candidate_pids = [pid_str]
+        if pid_str.startswith("prod_"):
+            candidate_pids.append(pid_str.replace("prod_", "", 1))
+        else:
+            candidate_pids.append(f"prod_{pid_str}")
 
-        stmt = select(Product).where(Product.id == product_id)
+        # Check cache first for sub-millisecond retrieval
+        for c_id in candidate_pids:
+            cache_key = f"cache:product:{c_id}"
+            cached_data = await redis_manager.get_json(cache_key)
+            if cached_data:
+                return Product(**cached_data)
+
+        stmt = select(Product).where(Product.id.in_(candidate_pids))
         res = await self.db.execute(stmt)
-        prod = res.scalar_one_or_none()
+        prod = res.scalars().first()
         
         if prod:
             prod_dict = {
@@ -49,7 +59,8 @@ class ProductRepository:
                 "view_count": prod.view_count,
                 "purchase_count": prod.purchase_count
             }
-            await redis_manager.set_json(cache_key, prod_dict, ttl=3600)
+            await redis_manager.set_json(f"cache:product:{prod.id}", prod_dict, ttl=3600)
+            await redis_manager.set_json(f"cache:product:{product_id}", prod_dict, ttl=3600)
         return prod
 
     async def get_by_ids(self, product_ids: List[str]) -> List[Product]:
@@ -59,13 +70,27 @@ class ProductRepository:
         # Deduplicate & preserve ordering
         str_ids = [str(pid) for pid in product_ids]
         unique_ids = list(dict.fromkeys(str_ids))
+        
+        query_ids = []
+        for pid in unique_ids:
+            query_ids.append(pid)
+            if pid.startswith("prod_"):
+                query_ids.append(pid.replace("prod_", "", 1))
+            else:
+                query_ids.append(f"prod_{pid}")
+
         found_products: Dict[str, Product] = {}
 
-        stmt = select(Product).where(Product.id.in_(unique_ids))
+        stmt = select(Product).where(Product.id.in_(query_ids))
         res = await self.db.execute(stmt)
         db_prods = list(res.scalars().all())
         for prod in db_prods:
-            found_products[str(prod.id)] = prod
+            pid_str = str(prod.id)
+            found_products[pid_str] = prod
+            if pid_str.startswith("prod_"):
+                found_products[pid_str.replace("prod_", "", 1)] = prod
+            else:
+                found_products[f"prod_{pid_str}"] = prod
 
         # Return ordered list matching original requested product_ids
         return [found_products[pid] for pid in unique_ids if pid in found_products]

@@ -46,27 +46,32 @@ class SemanticSearchAgent:
         # Step 2: Dense Embedding (384-dimensional)
         query_vec = embedding_service.encode(query)
 
-        # Step 3: Candidate Retrieval Cascade
+        # Step 3: Candidate Retrieval Cascade (Hybrid Keyword + Vector)
         candidate_ids = []
         scores_map = {}
 
+        # 3a. Retrieve direct SQL text / category / department matches
+        sql_products = await product_repo.get_by_category_or_dept(query, limit=top_k)
+        sql_ids = [str(p.id) for p in sql_products] if sql_products else []
+
+        # 3b. Retrieve FAISS 384d vector candidates
+        faiss_ids = []
         if faiss_manager.is_initialized and len(faiss_manager.id_map) > 0:
             candidates = faiss_manager.top_k_search(query_vec, top_k=top_k * 3)
-            candidate_ids = [str(sku) for sku, _ in candidates]
-            scores_map = {str(sku): float(score) for sku, score in candidates}
-            retrieval_mode = "FAISS"
+            faiss_ids = [str(sku) for sku, _ in candidates]
+            for sku, score in candidates:
+                scores_map[str(sku)] = float(score)
 
-        # SQL Fallback if FAISS produced no candidates
-        if not candidate_ids:
-            logger.warning("FAISS search yielded no candidates. Falling back to SQL vector/category search...")
-            sql_products = await product_repo.get_by_category_or_dept(query, limit=top_k * 2)
-            candidate_ids = [str(p.id) for p in sql_products]
-            scores_map = {str(p.id): 0.75 for p in sql_products}
-            retrieval_mode = "SQL_FALLBACK"
+        # 3c. Interleave SQL exact keyword matches first, then FAISS candidates
+        candidate_ids = list(dict.fromkeys(sql_ids + faiss_ids))
+        for p in sql_products:
+            scores_map[str(p.id)] = max(scores_map.get(str(p.id), 0.0), 0.85)
 
-        # Popularity Fallback if SQL search also yields nothing
+        retrieval_mode = "HYBRID_FAISS" if faiss_ids else "SQL_FALLBACK"
+
+        # Popularity Fallback if both SQL & FAISS yield nothing
         if not candidate_ids:
-            logger.warning("SQL search yielded no candidates. Falling back to Catalog Popularity...")
+            logger.warning("Search yielded no candidates. Falling back to Catalog Popularity...")
             pop_products = await product_repo.get_popular_products(limit=top_k)
             candidate_ids = [str(p.id) for p in pop_products]
             scores_map = {str(p.id): 0.60 for p in pop_products}
@@ -75,19 +80,12 @@ class SemanticSearchAgent:
         # Step 4: Batch Product Retrieval
         products = await product_repo.get_by_ids(candidate_ids) if candidate_ids else []
 
-        # If FAISS product IDs did not match DB products, fall back to SQL search
+        # Safety check if products was empty
         if not products:
-            logger.warning("FAISS candidate IDs did not match catalog products. Falling back to SQL search...")
-            sql_products = await product_repo.get_by_category_or_dept(query, limit=top_k * 2)
-            if sql_products:
-                products = sql_products
-                scores_map = {str(p.id): 0.75 for p in sql_products}
-                retrieval_mode = "SQL_FALLBACK"
-            else:
-                pop_products = await product_repo.get_popular_products(limit=top_k)
-                products = pop_products
-                scores_map = {str(p.id): 0.60 for p in pop_products}
-                retrieval_mode = "POPULARITY_FALLBACK"
+            pop_products = await product_repo.get_popular_products(limit=top_k)
+            products = pop_products
+            scores_map = {str(p.id): 0.60 for p in pop_products}
+            retrieval_mode = "POPULARITY_FALLBACK"
 
         # Step 5: Filter & Rerank Candidates
         filtered_products = []

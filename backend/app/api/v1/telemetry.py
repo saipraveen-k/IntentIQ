@@ -15,6 +15,7 @@ def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductReposit
     return ProductRepository(db)
 
 @router.post("/telemetry/event", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/event", status_code=status.HTTP_202_ACCEPTED)
 async def record_telemetry_event(
     event: TelemetryEventCreate,
     session_repo: SessionRepository = Depends(get_session_repository),

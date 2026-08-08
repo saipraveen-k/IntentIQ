@@ -87,8 +87,9 @@ class SemanticSearchResponse(BaseModel):
 class BundleResponse(BaseModel):
     base_product_id: str
     base_product: ProductDTO
-    complete_the_look: List[ProductDTO]
-    frequently_bought_together: List[ProductDTO]
+    bundle_items: Optional[List[ProductDTO]] = []
+    complete_the_look: List[ProductDTO] = []
+    frequently_bought_together: List[ProductDTO] = []
     substitutes: Optional[List[ProductDTO]] = []
     premium_alternatives: Optional[List[ProductDTO]] = []
     healthy_alternatives: Optional[List[ProductDTO]] = []
