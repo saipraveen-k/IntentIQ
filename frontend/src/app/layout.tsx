@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="bg-[#0B1020] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white" suppressHydrationWarning>
+      <body className="bg-[#FAFAFA] text-[#1D1D1F] min-h-screen flex flex-col antialiased selection:bg-[#007AFF] selection:text-white" suppressHydrationWarning>
         <Providers>
           <Header />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-12">

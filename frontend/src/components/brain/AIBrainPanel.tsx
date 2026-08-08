@@ -38,53 +38,44 @@ export const AIBrainPanel: React.FC = () => {
     : ['Neutral Discovery', 'Fresh Produce', 'Organic Pantry', 'Healthy Breakfast'];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl glass-panel p-6 lg:p-8 border border-blue-500/30 shadow-2xl shadow-blue-500/10">
-      
-      {/* Background Ambient Glow */}
-      <div className="ambient-glow glow-blue -top-20 -left-20 w-80 h-80 opacity-40" />
-      <div className="ambient-glow glow-emerald -bottom-20 -right-20 w-80 h-80 opacity-30" />
-
-      <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+    <section className="card-elevated p-6 lg:p-8">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         
         {/* Left Info Column */}
-        <div className="space-y-3 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400">
-            <Brain className="w-4 h-4 text-blue-400 animate-pulse" />
-            <span>AI Shopping Brain Control Plane</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+        <div className="space-y-4 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+            <Brain className="w-4 h-4" />
+            <span>AI Intelligence Engine</span>
           </div>
 
-          <h2 className="text-2xl lg:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            Real-Time Intent Inference Engine
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            Real-time intent analysis
             <button
               onClick={fetchBrainState}
               disabled={loading}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-              title="Refresh AI Brain State"
+              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </h2>
 
-          <p className="text-slate-400 text-sm leading-relaxed">
-            IntentIQ recalculates shopper vector representations in real time using clickstream dwell time, search query decompositions, and Instacart basket sequence history.
+          <p className="text-gray-500 text-sm leading-relaxed">
+            Our AI analyzes your shopping patterns in real-time using search behavior, browsing history, and purchase data to personalize recommendations.
           </p>
 
           {/* Active Detected Signals Badges */}
           <div className="pt-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Detected Real-Time Signals</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Active signals</span>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Search Queries
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Search queries
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Basket Evolution
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Basket history
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Clickstream Dwell Time
-              </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Instacart Purchase Graph
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Browsing patterns
               </span>
             </div>
           </div>
@@ -94,43 +85,43 @@ export const AIBrainPanel: React.FC = () => {
         <div className="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col gap-4">
           
           {/* Active Intent Gauge */}
-          <div className="glass-card p-5 rounded-xl border border-white/10 min-w-[280px]">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-              <span className="font-semibold uppercase tracking-wider">Inferred Active Intent</span>
-              <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                <Zap className="w-3.5 h-3.5" /> {lastLatency}ms SLA
+          <div className="card-base p-5 min-w-[280px]">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+              <span className="font-semibold uppercase tracking-wider">Current intent</span>
+              <span className="flex items-center gap-1 text-blue-600 font-bold">
+                <Zap className="w-3.5 h-3.5" /> {lastLatency}ms
               </span>
             </div>
             
-            <div className="text-xl font-bold text-white mb-2 flex items-center justify-between">
+            <div className="text-xl font-bold text-gray-900 mb-3 flex items-center justify-between">
               <span>{activeIntentLabel}</span>
-              <span className="text-2xl text-emerald-400 font-extrabold">{Math.round(intentConfidence * 100)}%</span>
+              <span className="text-2xl text-blue-600 font-extrabold">{Math.round(intentConfidence * 100)}%</span>
             </div>
 
             {/* Confidence Progress Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 via-indigo-400 to-emerald-400 rounded-full transition-all duration-500"
+                className="h-full bg-blue-500 rounded-full transition-all duration-500"
                 style={{ width: `${Math.round(intentConfidence * 100)}%` }}
               />
             </div>
           </div>
 
           {/* Intent Timeline Sequence */}
-          <div className="glass-card p-4 rounded-xl border border-white/10 text-xs">
-            <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-2">Session Intent Timeline</span>
+          <div className="card-base p-4 text-xs">
+            <span className="text-gray-500 font-semibold uppercase tracking-wider block mb-2">Session timeline</span>
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {timelineSteps.map((step, idx) => (
                 <React.Fragment key={`${step}-${idx}`}>
-                  <span className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap ${
+                  <span className={`px-3 py-1.5 rounded-full font-medium whitespace-nowrap ${
                     idx === timelineSteps.length - 1
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 font-semibold'
-                      : 'bg-slate-800/80 text-slate-400'
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-600'
                   }`}>
                     {step}
                   </span>
                   {idx < timelineSteps.length - 1 && (
-                    <span className="text-slate-600 font-bold">→</span>
+                    <span className="text-gray-300">→</span>
                   )}
                 </React.Fragment>
               ))}

@@ -26,40 +26,39 @@ export const PrivacyModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-lg glass-panel rounded-2xl border border-emerald-500/30 p-6 shadow-2xl space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 p-6 shadow-2xl space-y-4">
         
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold">
-            <ShieldCheck className="w-5 h-5" />
-            <span>DPDP Act 2023 Right-To-Be-Forgotten</span>
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-2 text-gray-900 font-semibold">
+            <ShieldCheck className="w-5 h-5 text-gray-700" />
+            <span>Privacy Settings</span>
           </div>
-          <button onClick={togglePrivacyModal} className="p-1 text-slate-400 hover:text-white">
+          <button onClick={togglePrivacyModal} className="p-2 text-gray-400 hover:text-gray-700">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-xs text-slate-300 leading-relaxed">
-          In accordance with the Digital Personal Data Protection (DPDP) Act 2023, IntentIQ allows users to purge all stored session intent vectors from Redis and delete historical clickstream telemetry logs.
+        <p className="text-sm text-gray-600 leading-relaxed">
+          You can delete all your shopping data including preferences, browsing history, and recommendations. This action cannot be undone.
         </p>
 
         {purgedCount !== null ? (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 space-y-1">
-            <div className="flex items-center gap-2 font-bold text-sm text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" /> Privacy Data Purged Successfully
+          <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-700 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-green-800">
+              <CheckCircle2 className="w-4 h-4" /> Data deleted successfully
             </div>
-            <p>• Redis User Intent Vector: Flushed</p>
-            <p>• Database Telemetry Records Deleted: {purgedCount} items</p>
+            <p>All your shopping data has been removed.</p>
           </div>
         ) : (
           <div className="pt-2">
             <button
               onClick={handlePurge}
               disabled={purging}
-              className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 transition-all"
+              className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition-all"
             >
               <Trash2 className="w-4 h-4" />
-              {purging ? 'Purging Personal Telemetry...' : 'Purge My Telemetry & Reset Intent Vector'}
+              {purging ? 'Deleting...' : 'Delete all my data'}
             </button>
           </div>
         )}
