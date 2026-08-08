@@ -83,12 +83,21 @@ class IntentAgent:
 
         if "vector" in existing_data and existing_data["vector"]:
             old_vec = np.array(existing_data["vector"], dtype=np.float32)
-            # EMA Update: 0.8 * old + 0.2 * new
-            updated_vec = ((1.0 - self.ema_alpha) * old_vec) + (self.ema_alpha * new_vec)
-            confidence = min(0.99, float(existing_data.get("confidence", 0.5)) + 0.05)
+            if event_type in ["DISMISS", "REMOVE", "DELETE", "DISLIKE", "NEGATIVE"]:
+                # Negative action: decrease affinity by subtracting event embedding
+                updated_vec = old_vec - (0.15 * new_vec)
+                confidence = max(0.40, float(existing_data.get("confidence", 0.5)) - 0.05)
+            else:
+                # EMA Update: 0.8 * old + 0.2 * new
+                updated_vec = ((1.0 - self.ema_alpha) * old_vec) + (self.ema_alpha * new_vec)
+                confidence = min(0.99, float(existing_data.get("confidence", 0.5)) + 0.05)
         else:
-            updated_vec = new_vec
-            confidence = 0.78
+            if event_type in ["DISMISS", "REMOVE", "DELETE", "DISLIKE", "NEGATIVE"]:
+                updated_vec = -0.15 * new_vec
+                confidence = 0.50
+            else:
+                updated_vec = new_vec
+                confidence = 0.78
 
         # Vector normalization
         norm = np.linalg.norm(updated_vec)

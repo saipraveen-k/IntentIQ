@@ -1,55 +1,61 @@
 'use client';
-import { Sparkles, ShoppingBag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sparkles, ShoppingBag, Check, Heart, Star } from 'lucide-react';
 import { useCart } from './CartContext';
+import { getProductImage } from '../utils/productImages';
+import { useEventLogger } from '../../hooks/useEventLogger';
 
-export const getProductImage = (item) => {
-  const dept = (item.department || '').toLowerCase().trim();
-  const pid = item.product_id;
+export { getProductImage };
+
+// Helper to sanitize technical XAI explanations into user-friendly shopper badges
+const formatShopperBadge = (reasonText, item) => {
+  if (!reasonText) return '🔥 Popular Pick';
   
-  let keyword = 'food';
-  if (dept.includes('produce')) {
-    keyword = 'fruit,vegetable';
-  } else if (dept.includes('dairy') || dept.includes('eggs')) {
-    keyword = 'dairy,cheese,milk';
-  } else if (dept.includes('meat') || dept.includes('seafood') || dept.includes('fish')) {
-    keyword = 'meat,fish';
-  } else if (dept.includes('snack') || dept.includes('chips')) {
-    keyword = 'snack,chips';
-  } else if (dept.includes('beverage') || dept.includes('drink') || dept.includes('juice')) {
-    keyword = 'drink,juice';
-  } else if (dept.includes('bakery') || dept.includes('bread') || dept.includes('pastry')) {
-    keyword = 'bread,pastry';
-  } else if (dept.includes('pantry') || dept.includes('canned')) {
-    keyword = 'cannedfood';
+  const text = reasonText.toLowerCase();
+  
+  if (text.includes('personalized') || text.includes('preference') || text.includes('profile')) {
+    return '✨ Handpicked for You';
+  }
+  if (text.includes('organic') || text.includes('health') || text.includes('clean')) {
+    return '🍏 Organic & Fresh';
+  }
+  if (text.includes('trending') || text.includes('popular') || text.includes('bestseller') || text.includes('high click')) {
+    return '🔥 Customer Favorite';
+  }
+  if (text.includes('bought together') || text.includes('pairing') || text.includes('match') || text.includes('frequently')) {
+    return '💡 Pairs Perfectly';
+  }
+  if (text.includes('delivery') || text.includes('fast') || text.includes('express')) {
+    return '⚡ Express Delivery';
+  }
+  if (text.includes('deal') || text.includes('discount') || text.includes('value')) {
+    return '🏷️ Great Value Deal';
   }
   
-  return `https://loremflickr.com/200/200/${keyword}?random=${pid}`;
+  // If raw string starts with technical metrics (e.g. "(95% confidence)"), clean it up
+  const clean = reasonText.replace(/\(\d+%.*?\)/gi, '').trim();
+  return clean ? `⭐ ${clean}` : '✨ Top Recommendation';
 };
-
-import { useEffect } from 'react';
-import { useEventLogger } from '../../hooks/useEventLogger';
 
 export default function ProductCard({ item, onProductClick }) {
   const { addToCart } = useCart();
   const { logEvent } = useEventLogger();
-  const pid = item.product_id;
-  const name = item.name || `Product #${pid}`;
-  const dept = item.department || 'Grocery';
+  const [added, setAdded] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const pid = item.product_id || item.id;
+  const name = item.name || item.title || `Product #${pid}`;
+  const dept = item.department || item.category || 'Grocery';
   const price = typeof item.price === 'number' ? item.price : 0;
+  const rating = item.rating || 4.8;
   
   const displayPrice = price.toFixed(2);
-  const originalPrice = (price * 1.3).toFixed(2);
-  
-  // Custom explainability badge styling based on keyword
-  const reason = item.reason || '🔥 Popular choice';
-  let badgeColor = 'bg-indigo-50 text-indigo-600 border-indigo-100';
-  if (reason.toLowerCase().includes('personalized') || reason.toLowerCase().includes('preferences')) {
-    badgeColor = 'bg-indigo-50 text-indigo-600 border-indigo-100';
-  } else if (reason.toLowerCase().includes('popular') || reason.toLowerCase().includes('trending') || reason.toLowerCase().includes('high click-through rate')) {
-    badgeColor = 'bg-amber-50 text-amber-600 border-amber-100';
-  } else if (reason.toLowerCase().includes('recommend') || reason.toLowerCase().includes('match')) {
-    badgeColor = 'bg-emerald-50 text-emerald-600 border-emerald-100';
-  }
+  const originalPrice = item.original_price 
+    ? item.original_price.toFixed(2) 
+    : (price * 1.25).toFixed(2);
+
+  const badgeText = formatShopperBadge(item.xai_explanation || item.reason, item);
 
   // Log view event on mount
   useEffect(() => {
@@ -69,63 +75,100 @@ export default function ProductCard({ item, onProductClick }) {
     onProductClick(pid);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
     logEvent({
       productId: pid,
       eventType: 'add_to_cart'
     });
     addToCart(item);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1200);
   };
 
+  const imgSrc = imageError ? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80' : getProductImage(item);
+
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-200 animate-fade-in group">
+    <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col justify-between hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1.5 transition-all duration-300 animate-fade-in group relative overflow-hidden">
       
-      {/* Product Image */}
+      {/* Wishlist Heart Button */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); setIsLiked(!isLiked); }}
+        className="absolute top-5 right-5 z-20 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 hover:text-rose-500 shadow-sm border border-slate-100 transition-transform active:scale-90"
+      >
+        <Heart className={`w-3.5 h-3.5 transition-colors ${isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
+      </button>
+
+      {/* Product Image Container */}
       <div 
         onClick={handleProductClick}
-        className="cursor-pointer relative overflow-hidden rounded-xl bg-slate-50 aspect-square border border-slate-50"
+        className="cursor-pointer relative overflow-hidden rounded-xl bg-slate-50 aspect-square border border-slate-100/60"
       >
         <img 
-          src={getProductImage(item)} 
+          src={imgSrc} 
           alt={name} 
-          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+          onError={() => setImageError(true)}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-          <span className="bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm border border-slate-100">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> Bundle details
+        
+        {/* Hover quick bundle preview overlay */}
+        <div className="absolute inset-0 bg-slate-900/15 opacity-0 group-hover:opacity-100 flex items-end justify-center p-2.5 transition-all duration-300">
+          <span className="w-full bg-white/95 backdrop-blur-md text-slate-800 text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 shadow-md border border-slate-100 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+            <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" /> Quick View & Bundles
           </span>
         </div>
       </div>
 
       {/* Product details */}
-      <div className="mt-2.5 flex-1 flex flex-col">
-        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block leading-none">{dept}</span>
+      <div className="mt-3 flex-1 flex flex-col">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider block leading-none">{dept}</span>
+          <div className="flex items-center gap-0.5 text-amber-400 text-[10px] font-bold">
+            <Star className="w-3 h-3 fill-amber-400" />
+            <span className="text-slate-600">{rating}</span>
+          </div>
+        </div>
+
         <h4 
           onClick={handleProductClick}
-          className="text-xs sm:text-sm font-semibold text-slate-800 mt-1 cursor-pointer line-clamp-2 hover:text-indigo-600 leading-snug"
+          className="text-xs sm:text-sm font-bold text-slate-800 mt-1 cursor-pointer line-clamp-2 hover:text-indigo-600 transition-colors leading-snug"
         >
           {name}
         </h4>
         
-        {/* Explainability pill */}
-        <div className={`mt-2 border px-2 py-0.5 rounded-md text-[9px] font-bold self-start flex items-center gap-1 ${badgeColor}`}>
-          <span>{reason}</span>
+        {/* User-Friendly Recommendation Badge */}
+        <div className="mt-2.5 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 border border-indigo-100/80 px-2.5 py-1 rounded-lg text-[10px] font-bold text-indigo-700 self-start flex items-center gap-1 shadow-2xs">
+          <span>{badgeText}</span>
         </div>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-1.5 mt-2">
-          <span className="text-sm font-black text-slate-800">₹{displayPrice}</span>
-          <span className="text-[10px] text-slate-400 line-through">₹{originalPrice}</span>
+        <div className="flex items-baseline gap-1.5 mt-2.5">
+          <span className="text-sm font-black text-slate-900">₹{displayPrice}</span>
+          {parseFloat(originalPrice) > price && (
+            <span className="text-[10px] text-slate-400 line-through">₹{originalPrice}</span>
+          )}
         </div>
       </div>
 
       {/* Add CTA */}
       <button 
         onClick={handleAddToCart}
-        className="mt-3 w-full bg-slate-50 hover:bg-indigo-600 text-indigo-600 hover:text-white border border-slate-100 hover:border-indigo-600 transition-all font-extrabold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5"
+        className={`mt-3 w-full font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm active:scale-95 ${
+          added 
+            ? 'bg-emerald-600 text-white border border-emerald-600 shadow-emerald-500/20' 
+            : 'bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white border border-indigo-100 hover:border-indigo-600 shadow-indigo-600/5 hover:shadow-indigo-600/20'
+        }`}
       >
-        <ShoppingBag className="w-3.5 h-3.5" /> Add
+        {added ? (
+          <>
+            <Check className="w-4 h-4 animate-bounce" /> Added to Basket!
+          </>
+        ) : (
+          <>
+            <ShoppingBag className="w-3.5 h-3.5" /> Add to Basket
+          </>
+        )}
       </button>
     </div>
   );

@@ -5,7 +5,10 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onIdTokenChanged,
-  sendEmailVerification
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { auth } from '../firebase/client';
 import { useRouter, usePathname } from 'next/navigation';
@@ -29,7 +32,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check if we should run in mock mode
-    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
 
     if (isMock) {
       // Simulate mock auth check on mount
@@ -66,7 +69,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (loading) return;
     
-    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    const isAuthRoute = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
     
     if (!user) {
       if (!isAuthRoute) {
@@ -80,7 +83,7 @@ export function AuthProvider({ children }) {
   }, [user, loading, pathname, router]);
 
   const login = async (email, password) => {
-    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
     if (isMock) {
       const uid = email.split('@')[0];
       const mockUser = {
@@ -95,11 +98,35 @@ export function AuthProvider({ children }) {
       router.push('/');
       return { user: mockUser };
     }
-    return signInWithEmailAndPassword(auth, email, password);
+    const res = await signInWithEmailAndPassword(auth, email, password);
+    router.push('/');
+    return res;
+  };
+
+  const loginWithGoogle = async () => {
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
+    if (isMock) {
+      const mockUser = {
+        uid: 'google-demo-user-123',
+        email: 'demo.google@example.com',
+        displayName: 'Google Demo User',
+        emailVerified: true
+      };
+      setUser(mockUser);
+      setToken(`mock-${mockUser.uid}`);
+      localStorage.setItem('mock_user', JSON.stringify(mockUser));
+      document.cookie = `token=mock-${mockUser.uid}; path=/; max-age=3600; SameSite=Strict`;
+      router.push('/');
+      return { user: mockUser };
+    }
+    const provider = new GoogleAuthProvider();
+    const res = await signInWithPopup(auth, provider);
+    router.push('/');
+    return res;
   };
 
   const signup = async (email, password) => {
-    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
     if (isMock) {
       const uid = email.split('@')[0];
       const mockUser = {
@@ -119,7 +146,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
     if (isMock) {
       setUser(null);
       setToken(null);
@@ -133,7 +160,7 @@ export function AuthProvider({ children }) {
   };
 
   const sendVerification = async () => {
-    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
     if (isMock) {
       alert("Mock verification email sent! Refreshing to mark as verified.");
       if (user) {
@@ -148,8 +175,16 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const sendPasswordReset = async (email) => {
+    const isMock = !process.env.NEXT_PUBLIC_FIREBASE_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_CONFIG.includes('mock-api-key');
+    if (isMock) {
+      return true;
+    }
+    return sendPasswordResetEmail(auth, email);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, sendVerification }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, signup, logout, sendVerification, sendPasswordReset }}>
       {children}
     </AuthContext.Provider>
   );

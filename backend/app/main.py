@@ -26,6 +26,17 @@ from app.auth import FirebaseAuthMiddleware
 from app.routers.events import router as events_router, event_batch_worker
 from app.routers.user import router as user_router
 
+from app.api.v1.recommendations import router as recommendations_api_router
+from app.api.v1.search import router as search_api_router
+from app.api.v1.bundle import router as bundle_api_router
+from app.api.v1.brain import router as brain_api_router
+from app.api.v1.analytics import router as analytics_api_router
+from app.api.v1.privacy import router as privacy_api_router
+from app.api.v1.guardrails import router as guardrails_api_router
+from app.api.v1.system import router as system_api_router
+from app.api.v1.telemetry import router as telemetry_api_router
+
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -48,6 +59,16 @@ app.add_middleware(FirebaseAuthMiddleware)
 # Include routers
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
+app.include_router(recommendations_api_router, prefix="/api/v1")
+app.include_router(search_api_router, prefix="/api/v1")
+app.include_router(bundle_api_router, prefix="/api/v1")
+app.include_router(brain_api_router, prefix="/api/v1")
+app.include_router(analytics_api_router, prefix="/api/v1")
+app.include_router(privacy_api_router, prefix="/api/v1")
+app.include_router(guardrails_api_router, prefix="/api/v1")
+app.include_router(system_api_router, prefix="/api/v1")
+app.include_router(telemetry_api_router, prefix="/api/v1")
+
 
 # Global models and data structures
 session_encoder = None
@@ -160,6 +181,13 @@ async def startup_event():
 
     # Initialize DB tables
     await init_db()
+
+    # Initialize faiss_manager and embedding_service for the production agents
+    from app.core.embeddings import embedding_service
+    from app.core.faiss_manager import faiss_manager
+    embedding_service.load_model()
+    faiss_manager_path = resolve_file("app/faiss_index.bin")
+    faiss_manager.load_from_disk(faiss_manager_path)
 
     global session_encoder, user_tower, product_tower, ncf_model, faiss_index
     global product_id_to_index, index_to_product_id, product_embeddings, mappings
@@ -471,153 +499,7 @@ def query_intent_fallback(query: str, user_id: Optional[str] = None, limit: int 
     candidate_pids.sort(key=lambda pid: product_popularity.get(pid, 0), reverse=True)
     return candidate_pids[:limit]
 
-@app.post("/api/v1/search/semantic")
-async def search_semantic(req: SearchRequest, request: Request):
-    t_start = time.time()
-    query = req.query
-    user_raw = getattr(request.state, "uid", "mock-default-user")
-    
-    loop = asyncio.get_running_loop()
-    query_text_emb = await loop.run_in_executor(
-        None, 
-        lambda: embedding_model.encode(query, convert_to_numpy=True)
-    )
-    
-    query_text_emb_t = torch.tensor([query_text_emb], dtype=torch.float32, device=device)
-    dummy_id = torch.tensor([0], dtype=torch.long, device=device)
-    with torch.no_grad():
-        query_vector_64_t = product_tower(dummy_id, dummy_id, dummy_id, query_text_emb_t)
-        query_vector_64_t = query_vector_64_t / torch.norm(query_vector_64_t, dim=-1, keepdim=True).clamp(min=1e-12)
-        query_vector_64 = query_vector_64_t.cpu().numpy().astype('float32')
-        
-    faiss_index.nprobe = 3
-    distances, indices = faiss_index.search(query_vector_64, 50)
-    candidate_indices = indices[0]
-    
-    candidate_pids = []
-    for idx in candidate_indices:
-        if idx >= 0 and idx < len(index_to_product_id):
-            candidate_pids.append(index_to_product_id[idx])
-            
-    valid_pids = [pid for pid in candidate_pids if pid in product_id_to_index]
-    
-    is_fallback = False
-    fallback_reason_str = ""
-    
-    if len(valid_pids) < 3 or query.lower().strip() in KEYWORD_TO_DEPARTMENTS:
-        is_fallback = True
-        valid_pids = query_intent_fallback(query, user_raw, limit=20)
-        fallback_reason_str = f"Showing popular items in relevant aisles for '{query}'"
-        
-    def run_ncf_scoring():
-        u_idx = mappings["user_to_idx"].get(user_raw, 1)
-        if u_idx >= 206210:
-            u_idx = 1
-            
-        if isinstance(user_raw, str):
-            import hashlib
-            seed_val = int(hashlib.md5(user_raw.encode("utf-8")).hexdigest(), 16) % (2**32 - 1)
-        else:
-            seed_val = int(user_raw) if user_raw else 1
-            
-        np.random.seed(seed_val)
-        mock_static = torch.tensor([np.random.randn(8).astype(np.float32)], dtype=torch.float32, device=device)
-        dummy_history = torch.zeros((1, 20), dtype=torch.long, device=device)
-        with torch.no_grad():
-            sess_vec = session_encoder(dummy_history)
-            user_emb = user_tower(torch.tensor([u_idx], dtype=torch.long, device=device), sess_vec, mock_static)
-            user_emb_rep = user_emb.repeat(len(valid_pids), 1)
-            
-        cand_emb_list = [product_embeddings[product_id_to_index[pid]] for pid in valid_pids]
-        cand_emb_arr = np.vstack(cand_emb_list)
-        cand_emb_t = torch.tensor(cand_emb_arr, dtype=torch.float32, device=device)
-        with torch.no_grad():
-            _, _, purchase_prob = ncf_model(user_emb_rep, cand_emb_t)
-            ncf_scores = purchase_prob.squeeze(-1).cpu().numpy()
-        return list(ncf_scores)
-        
-    cross_encoder_timeout = False
-    
-    if is_fallback:
-        ncf_scores = await loop.run_in_executor(None, run_ncf_scoring)
-        cross_scores = None
-    else:
-        query_word_count = len(query.split())
-        ncf_task = loop.run_in_executor(None, run_ncf_scoring)
-        
-        if query_word_count > 3:
-            pairs = [(query, product_details.get(pid, {}).get("name", "")) for pid in valid_pids]
-            def run_cross_encoder_scoring():
-                return cross_encoder.predict(pairs)
-                
-            cross_task = loop.run_in_executor(None, run_cross_encoder_scoring)
-            
-            try:
-                ncf_scores, cross_scores = await asyncio.gather(
-                    ncf_task,
-                    asyncio.wait_for(cross_task, timeout=0.040)
-                )
-            except asyncio.TimeoutError:
-                logger.warning(f"Cross-encoder timed out (> 40ms) for query '{query}'. Falling back to NCF only.")
-                cross_encoder_timeout = True
-                ncf_scores = await ncf_task
-                cross_scores = None
-            except Exception as e:
-                logger.error(f"Error during parallel scoring: {e}")
-                cross_encoder_timeout = True
-                ncf_scores = await ncf_task
-                cross_scores = None
-        else:
-            ncf_scores = await ncf_task
-            cross_scores = None
-            
-    final_scored_results = []
-    if cross_scores is not None and not cross_encoder_timeout:
-        if len(cross_scores) > 1:
-            c_min = cross_scores.min()
-            c_max = cross_scores.max()
-            norm_cross_scores = (cross_scores - c_min) / (c_max - c_min + 1e-12)
-        else:
-            norm_cross_scores = cross_scores
-            
-        for i, pid in enumerate(valid_pids):
-            combined_score = 0.4 * float(norm_cross_scores[i]) + 0.6 * float(ncf_scores[i])
-            final_scored_results.append((pid, combined_score))
-    else:
-        for i, pid in enumerate(valid_pids):
-            final_scored_results.append((pid, float(ncf_scores[i])))
-            
-    final_scored_results.sort(key=lambda x: x[1], reverse=True)
-    top_10 = final_scored_results[:10]
-    
-    results = []
-    for pid, score in top_10:
-        details = product_details.get(pid, {"name": f"Product {pid}", "department": "Grocery"})
-        
-        if is_fallback:
-            reason_str = f"🔥 Popular in {details['department']}"
-        else:
-            reason_str = generate_reason([], int(pid), details)
-            
-        results.append({
-            "product_id": int(pid),
-            "name": details["name"],
-            "department": details["department"],
-            "price": round(2.5 + (int(pid) % 13) * 0.95, 2),
-            "score": round(score, 4),
-            "reason": reason_str
-        })
-        
-    elapsed_ms = (time.time() - t_start) * 1000.0
-    logger.info(f"Semantic search completed in {elapsed_ms:.2f}ms (timeout={cross_encoder_timeout}, fallback={is_fallback})")
-    
-    return {
-        "results": results,
-        "latency_ms": round(elapsed_ms, 2),
-        "cross_encoder_timeout": cross_encoder_timeout,
-        "fallback": is_fallback,
-        "fallback_reason": fallback_reason_str
-    }
+
 
 @app.post("/api/v1/bundle")
 def get_bundle(req: BundleRequest):

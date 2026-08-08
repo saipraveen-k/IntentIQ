@@ -43,6 +43,36 @@ async def log_event(req: EventCreate, request: Request):
     
     return {"status": "success", "message": "Event queued"}
 
+import os
+import json
+
+LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
+CLICKSTREAM_LOG_FILE = os.path.join(LOGS_DIR, "clickstream_ctr.log")
+
+from app.core.pii_sanitizer import sanitize_text
+
+def append_clickstream_log(event_list):
+    try:
+        with open(CLICKSTREAM_LOG_FILE, "a", encoding="utf-8") as f:
+            for event in event_list:
+                user_id_str = str(event.user_id) if event.user_id else "anonymous"
+                masked_user = sanitize_text(user_id_str)
+
+                log_payload = {
+                    "type": "CLICKSTREAM_EVENT",
+                    "timestamp": event.timestamp.isoformat() if event.timestamp else datetime.utcnow().isoformat(),
+                    "user_id": masked_user,
+                    "session_id": event.session_id,
+                    "event_type": event.event_type,
+                    "product_id": event.product_id,
+                    "query_text": sanitize_text(event.query_text) if event.query_text else None,
+                    "results_shown_count": len(event.results_shown) if event.results_shown else 0
+                }
+                f.write(json.dumps(log_payload) + "\n")
+    except Exception as e:
+        logger.error(f"Failed to write clickstream log file: {e}")
+
 async def event_batch_worker():
     """
     Background worker that fetches events from the queue and inserts them in batches.
@@ -71,7 +101,8 @@ async def event_batch_worker():
             if events_to_insert:
                 async with AsyncSessionLocal() as db:
                     await save_event_batch(db, events_to_insert)
-                    logger.info(f"Saved batch of {len(events_to_insert)} events to database.")
+                    append_clickstream_log(events_to_insert)
+                    logger.info(f"Saved batch of {len(events_to_insert)} events to database and persistent log file.")
                     
         except asyncio.CancelledError:
             logger.info("Event batch worker cancelled.")

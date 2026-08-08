@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Dict, Any
 
 class ComponentScoreBreakdown(BaseModel):
@@ -30,6 +30,8 @@ class StructuredXAIExplanation(BaseModel):
 class ProductDTO(BaseModel):
     id: str
     title: str
+    product_id: Optional[int] = None
+    name: Optional[str] = None
     description: Optional[str] = None
     category: str
     sub_category: Optional[str] = None
@@ -44,6 +46,18 @@ class ProductDTO(BaseModel):
     structured_xai: Optional[StructuredXAIExplanation] = None
     match_score: Optional[float] = None
     score_breakdown: Optional[ComponentScoreBreakdown] = None
+
+    @model_validator(mode="after")
+    def populate_legacy_fields(self):
+        if self.product_id is None:
+            try:
+                numeric_id = "".join(filter(str.isdigit, self.id))
+                self.product_id = int(numeric_id) if numeric_id else 0
+            except Exception:
+                self.product_id = 0
+        if self.name is None:
+            self.name = self.title
+        return self
 
 class TelemetryEventCreate(BaseModel):
     session_id: str
@@ -123,7 +137,9 @@ class AnalyticsDashboardResponse(BaseModel):
     top_bundle_pairs: Optional[List[Dict[str, Any]]] = None
 
 class PrivacyPurgeRequest(BaseModel):
-    session_id: str
+    session_id: Optional[str] = None
+    user_id: Optional[str] = None
+    confirm_purge: Optional[bool] = True
 
 class PrivacyPurgeResponse(BaseModel):
     session_id: str

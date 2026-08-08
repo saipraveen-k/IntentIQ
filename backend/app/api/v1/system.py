@@ -48,9 +48,16 @@ async def get_system_health(db: AsyncSession = Depends(get_db)) -> Dict[str, Any
     redis_alive = redis_manager.is_fallback is False
     gemini_active = gemini_client.model is not None
     health_latency = round((time.time() - start_t) * 1000.0, 2)
+    
+    dataset_mode = "full" if prod_count > 10000 else "demo"
 
     return {
         "status": "HEALTHY",
+        "dataset_mode": dataset_mode,
+        "products_count": prod_count,
+        "orders_count": session_count,
+        "users_count": 206209,  # Instacart dataset standard users count
+        "interactions_count": event_count,
         "dataset": {
             "provider": "Instacart",
             "loaded": prod_count > 0,

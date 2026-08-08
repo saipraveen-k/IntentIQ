@@ -137,6 +137,33 @@ async def get_ctr_boost_factors(db: AsyncSession, user_id: str, product_details:
         # Boost formula: boost = 1.0 + log(1.0 + CTR)
         boost_factors[dept] = 1.0 + math.log(1.0 + ctr)
         
+    try:
+        import os
+        import json
+        from datetime import datetime
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_file = os.path.join(logs_dir, "clickstream_ctr.log")
+        user_id_str = str(user_id) if user_id else "anonymous"
+        if "@" in user_id_str:
+            parts = user_id_str.split("@")
+            masked_user = f"{parts[0][:2]}***@{parts[1]}"
+        else:
+            masked_user = user_id_str
+
+        payload = {
+            "type": "CTR_COMPUTATION",
+            "timestamp": datetime.utcnow().isoformat(),
+            "user_id": masked_user,
+            "user_ctr_departments": list(user_ctr.keys()),
+            "user_ctr_scores": user_ctr,
+            "top_global_ctr": dict(sorted(global_ctr.items(), key=lambda x: x[1], reverse=True)[:5])
+        }
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception as e:
+        logger.error(f"Failed to log CTR calculation: {e}")
+
     return {
         "boost_factors": boost_factors,
         "user_ctr": user_ctr,
