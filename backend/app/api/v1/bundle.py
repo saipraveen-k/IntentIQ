@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Union, Any
 from app.core.database import get_db
 from app.models.schemas import BundleResponse, ProductDTO
 from app.repositories.product_repository import ProductRepository
 from app.repositories.bundle_repository import BundleRepository
 from app.agents.bundle_agent import bundle_agent
+from app.pipeline.instacart_relationships import instacart_relationship_engine
 from app.models.domain import Product
 
 router = APIRouter()
@@ -15,8 +16,6 @@ def get_product_repository(db: AsyncSession = Depends(get_db)) -> ProductReposit
 
 def get_bundle_repository(db: AsyncSession = Depends(get_db)) -> BundleRepository:
     return BundleRepository(db)
-
-from app.pipeline.instacart_relationships import instacart_relationship_engine
 
 @router.get("/bundle/{product_id}", response_model=BundleResponse)
 async def get_product_bundle(
@@ -37,9 +36,10 @@ async def get_product_bundle(
 
     relationships = await instacart_relationship_engine.get_product_relationships(base_prod, db)
 
-    def to_dto(p: Product) -> ProductDTO:
+    def to_dto(item: Any) -> ProductDTO:
+        p = item["product"] if isinstance(item, dict) and "product" in item else item
         return ProductDTO(
-            id=p.id,
+            id=str(p.id),
             title=p.title,
             description=p.description,
             category=p.category,
@@ -53,15 +53,21 @@ async def get_product_bundle(
             in_stock=p.in_stock
         )
 
+    subs = [to_dto(x) for x in relationships.get("substitutes", []) if isinstance(x, (dict, Product))]
+    prem = [to_dto(x) for x in relationships.get("premium_alternatives", []) if isinstance(x, (dict, Product))]
+    
+    raw_healthy = relationships.get("healthy_alternatives", [])
+    healthy_list = [to_dto(x) for x in raw_healthy if isinstance(x, (dict, Product))] if isinstance(raw_healthy, list) else []
+
     return BundleResponse(
         base_product_id=product_id,
         base_product=to_dto(base_prod),
-        complete_the_look=[to_dto(p) for p in bundles["complete_the_look"]],
-        frequently_bought_together=[to_dto(p) for p in bundles["frequently_bought_together"]],
-        substitutes=[to_dto(p) for p in relationships.get("substitutes", [])],
-        premium_alternatives=[to_dto(p) for p in relationships.get("premium_alternatives", [])],
-        healthy_alternatives=[to_dto(p) for p in relationships.get("healthy_alternatives", [])],
-        bundle_discount_pct=bundles["bundle_discount_pct"],
-        original_total=bundles["original_total"],
-        discounted_total=bundles["discounted_total"]
+        complete_the_look=[to_dto(p) for p in bundles.get("complete_the_look", [])],
+        frequently_bought_together=[to_dto(p) for p in bundles.get("frequently_bought_together", [])],
+        substitutes=subs,
+        premium_alternatives=prem,
+        healthy_alternatives=healthy_list,
+        bundle_discount_pct=bundles.get("bundle_discount_pct", 15.0),
+        original_total=bundles.get("original_total", round(base_prod.price * 1.15, 2)),
+        discounted_total=bundles.get("discounted_total", round(base_prod.price * 0.95, 2))
     )

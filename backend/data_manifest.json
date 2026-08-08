@@ -1,0 +1,16 @@
+{
+  "manifest_version": "1.0.0",
+  "created_at": "2026-08-08T07:22:16.333214",
+  "dataset_provider": "Instacart",
+  "product_count": 5278,
+  "embedding_count": 5278,
+  "embedding_dimension": 384,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "faiss_vector_count": 5278,
+  "faiss_canonical_path": "C:\\tempp\\projects\\IntentIQ\\backend\\data\\indexes\\products.faiss",
+  "graph_node_count": 5278,
+  "graph_edge_count": 63287,
+  "association_rule_product_count": 5140,
+  "database_products_count": 5278,
+  "status": "READY"
+}

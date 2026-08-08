@@ -20,20 +20,22 @@ PERSONA_PROFILES = {
 
 class IntentAgent:
     """
-    Phase 3 & 4 Agent 1: Intent Agent
-    Multi-signal real-time intent vector calculation with EMA update formula:
-    NewIntent = 0.8 * PreviousIntent + 0.2 * CurrentEmbedding
-    Supports 7 preset Shopping Personas for interactive demonstration.
+    Real-Time Session Intent Agent:
+    - Cold Start: Uses popularity, catalog quality, rating with no fabricated intent.
+    - Real-Time Learning: intent_new = 0.8 * intent_old + 0.2 * event_embedding.
+    - Stores session_id, event, product_id, old_intent_summary, new_intent_summary, intent_confidence.
     """
     def __init__(self):
         self.ema_alpha = 0.20
         self.event_weights = {
+            "VIEW": 0.5,
             "CLICK": 1.0,
-            "HOVER": 0.5,
-            "SEARCH": 1.5,
-            "WISHLIST": 2.0,
+            "HOVER": 0.3,
+            "WISHLIST": 1.8,
             "ADD_TO_CART": 2.5,
-            "PURCHASE": 3.0
+            "REMOVE_FROM_CART": -1.0,
+            "PURCHASE": 3.0,
+            "SEARCH": 1.5
         }
 
     async def apply_persona(self, session_id: str, persona_key: str, session_repo: Optional[SessionRepository] = None) -> Dict[str, Any]:
@@ -46,12 +48,15 @@ class IntentAgent:
             "active_label": profile["label"],
             "persona": persona_key.lower(),
             "confidence": 0.95,
+            "is_cold_start": False,
             "vector": vec,
             "history": [
                 {
                     "timestamp": datetime.utcnow().isoformat(),
                     "event_type": "PERSONA_SET",
-                    "intent_label": profile["label"],
+                    "product_id": None,
+                    "old_intent_summary": "Cold Start",
+                    "new_intent_summary": profile["label"],
                     "confidence": 0.95
                 }
             ]
@@ -71,55 +76,60 @@ class IntentAgent:
         self,
         session_id: str,
         event_type: str,
-        item_text: str,
-        category: str,
+        product_id: Optional[str] = None,
+        item_text: str = "",
+        category: str = "",
         dwell_time_ms: int = 0,
         session_repo: Optional[SessionRepository] = None
     ) -> Dict[str, Any]:
         key = f"user_intent:{session_id}"
         existing_data = await redis_manager.get_json(key) or {}
 
-        new_vec = np.array(embedding_service.encode(f"{category} {item_text}"), dtype=np.float32)
+        # Encode current event item representation
+        event_text = f"{category} {item_text}".strip() or "General Product Discovery"
+        event_vec = np.array(embedding_service.encode(event_text), dtype=np.float32)
+        old_label = existing_data.get("active_label", "Cold Start Discovery")
 
         if "vector" in existing_data and existing_data["vector"]:
             old_vec = np.array(existing_data["vector"], dtype=np.float32)
-            if event_type in ["DISMISS", "REMOVE", "DELETE", "DISLIKE", "NEGATIVE"]:
-                # Negative action: decrease affinity by subtracting event embedding
-                updated_vec = old_vec - (0.15 * new_vec)
+            if event_type in ["DISMISS", "REMOVE", "REMOVE_FROM_CART", "DELETE", "DISLIKE"]:
+                # Negative action: decrease affinity
+                updated_vec = old_vec - (0.15 * event_vec)
                 confidence = max(0.40, float(existing_data.get("confidence", 0.5)) - 0.05)
+                new_label = old_label
             else:
-                # EMA Update: 0.8 * old + 0.2 * new
-                updated_vec = ((1.0 - self.ema_alpha) * old_vec) + (self.ema_alpha * new_vec)
-                confidence = min(0.99, float(existing_data.get("confidence", 0.5)) + 0.05)
+                # Real-time EMA Formula: intent_new = 0.8 * intent_old + 0.2 * event_embedding
+                updated_vec = (0.80 * old_vec) + (0.20 * event_vec)
+                confidence = min(0.99, float(existing_data.get("confidence", 0.5)) + 0.08)
+                new_label = f"Shopper interested in {category}" if category else old_label
         else:
-            if event_type in ["DISMISS", "REMOVE", "DELETE", "DISLIKE", "NEGATIVE"]:
-                updated_vec = -0.15 * new_vec
-                confidence = 0.50
-            else:
-                updated_vec = new_vec
-                confidence = 0.78
+            # First interaction transition from cold start
+            updated_vec = event_vec
+            confidence = 0.75
+            new_label = f"Exploring {category}" if category else "Session Active"
 
-        # Vector normalization
+        # Vector normalization to maintain unit hypersphere
         norm = np.linalg.norm(updated_vec)
         if norm > 0:
             updated_vec = updated_vec / norm
 
-        label = category if category else "General Discovery"
         history = existing_data.get("history", [])
-        
         history.append({
             "timestamp": datetime.utcnow().isoformat(),
             "event_type": event_type,
-            "intent_label": label,
+            "product_id": str(product_id) if product_id else None,
+            "old_intent_summary": old_label,
+            "new_intent_summary": new_label,
             "confidence": round(confidence, 2)
         })
         history = history[-10:]
 
         intent_payload = {
             "session_id": session_id,
-            "active_label": label,
+            "active_label": new_label,
             "persona": existing_data.get("persona", "default"),
             "confidence": round(confidence, 2),
+            "is_cold_start": False,
             "vector": updated_vec.tolist(),
             "history": history
         }
@@ -129,12 +139,13 @@ class IntentAgent:
         if session_repo:
             await session_repo.upsert_session(
                 session_id=session_id,
-                active_intent=label,
+                active_intent=new_label,
                 confidence=confidence,
                 vector_json=updated_vec.tolist(),
                 history_json=history
             )
 
+        logger.info(f"Updated session {session_id} intent: '{old_label}' -> '{new_label}' (conf: {confidence:.2f})")
         return intent_payload
 
     async def get_active_intent(self, session_id: str) -> Dict[str, Any]:
@@ -143,15 +154,15 @@ class IntentAgent:
         if data:
             return data
         
-        default_vec = embedding_service.encode("Trending Popular Product Discovery")
+        # Cold start session: Return clean default cold-start metadata without fabricated intent
         return {
             "session_id": session_id,
-            "active_label": "Neutral (Cold Start)",
+            "active_label": "Cold Start (New Session)",
             "persona": "default",
             "confidence": 0.50,
-            "vector": default_vec,
+            "is_cold_start": True,
+            "vector": None,
             "history": []
         }
 
 intent_agent = IntentAgent()
-

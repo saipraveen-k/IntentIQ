@@ -1,0 +1,10 @@
+{
+  "model_retrieval": "TwoTowerRetrieval",
+  "model_ranking": "MultiTaskNCF",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "embedding_dimension": 384,
+  "product_count": 5278,
+  "user_count": 206215,
+  "trained_at": "2026-08-08T07:20:42.230283",
+  "dataset_hash": "2e3fd40cb46f13c01c7b326ef77dca1b"
+}
